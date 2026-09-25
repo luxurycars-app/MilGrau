@@ -26,6 +26,14 @@ document.addEventListener('DOMContentLoaded', () => {
         searchInput.addEventListener('input', (e) => renderDashboard(e.target.value));
     }
 
+    const phoneInput = document.getElementById('client-phone');
+    if(phoneInput) {
+        phoneInput.addEventListener('input', function (e) {
+            let x = e.target.value.replace(/\D/g, '').match(/(\d{0,2})(\d{0,5})(\d{0,4})/);
+            e.target.value = !x[2] ? x[1] : '(' + x[1] + ') ' + x[2] + (x[3] ? '-' + x[3] : '');
+        });
+    }
+
     const dateInput = document.getElementById('booking-date');
     if(dateInput) {
         const today = new Date();
@@ -273,6 +281,14 @@ function handleBookingSubmit(e) {
     const vehicle = document.getElementById('client-vehicle').value;
     const vehicleType = document.getElementById('vehicle-type').value;
     const vehicleColor = document.getElementById('vehicle-color').value;
+    const notesInput = document.getElementById('booking-notes');
+    const notes = notesInput ? notesInput.value : '';
+    const honeypot = document.getElementById('milgrau-honeypot');
+    
+    // Anti-Bot: Honeypot check
+    if(honeypot && honeypot.value !== '') {
+        return; // Bot detected, silently reject
+    }
     
     if(!time) {
         MilGrauDialog.showToast("Por favor, selecione um horário válido.", "error");
@@ -283,6 +299,19 @@ function handleBookingSubmit(e) {
     let finalPrice = "N/A";
     if(serviceObj && vehicleType && serviceObj.prices[vehicleType]) {
         finalPrice = `R$ ${serviceObj.prices[vehicleType]},00`;
+    }
+    
+    // Anti-Spam Check: Prevent booking the same car again on the same day if there is already an active booking
+    const duplicate = appointments.find(a => 
+        a.date === date && 
+        a.clientPhone === phone && 
+        a.clientVehicle === vehicle && 
+        (a.status === 'pendente' || a.status === 'confirmado')
+    );
+    
+    if (duplicate) {
+        MilGrauDialog.showToast("Você já tem um agendamento ativo para este veículo hoje.", "error");
+        return;
     }
     
     const activeAddons = Array.from(document.querySelectorAll('.addon-card.active')).map(card => {
@@ -304,6 +333,7 @@ function handleBookingSubmit(e) {
         clientVehicle: vehicle,
         vehicleType: vehicleType,
         vehicleColor: vehicleColor,
+        notes: notes,
         addons: activeAddons,
         status: 'pendente',
         createdAt: new Date().toISOString()
@@ -336,6 +366,7 @@ function handleBookingSubmit(e) {
     waMessage += `*Lavagem:* ${serviceObj ? serviceObj.name : serviceId}\n`;
     waMessage += `*Data:* ${formattedDate}\n`;
     waMessage += `*Horário:* ${time}\n`;
+    if(notes) waMessage += `*Observações:* ${notes}\n`;
     waMessage += addonsWaText + `\n`;
     waMessage += `*VALOR ESTIMADO:* *R$ ${totalPriceNum},00*\n\n`;
     waMessage += `_Aguardando confirmação do estabelecimento._`;
@@ -514,18 +545,53 @@ function updateTimeSlots(dateString) {
     
     const dayAppointments = appointments.filter(a => a.date === dateString);
     
-    slots.forEach(s => slotCounts[s] = 0);
+    const durations = milgrauSettings.vehicleDurations || { hatch: 60, sedan: 60, suv: 120, moto: 60 };
     
-    dayAppointments.forEach(app => {
-        if(slotCounts[app.time] !== undefined && app.status !== 'cancelado') {
-            slotCounts[app.time]++;
-        }
+    const timeToMins = (t) => {
+        const [h, m] = t.split(':').map(Number);
+        return (h * 60) + m;
+    };
+    
+    slots.forEach(slot => slotCounts[slot] = 0);
+    
+    // Calculate overlapping appointments for each slot based on durations
+    slots.forEach(slot => {
+        const slotMins = timeToMins(slot);
+        
+        dayAppointments.forEach(app => {
+            if(app.status !== 'cancelado' && app.time) {
+                const startMins = timeToMins(app.time);
+                const duration = durations[app.vehicleType] || 60;
+                const endMins = startMins + duration;
+                
+                // If this slot falls within the appointment's duration, it occupies a bay
+                if (slotMins >= startMins && slotMins < endMins) {
+                    slotCounts[slot]++;
+                }
+            }
+        });
     });
     
     timeItems.innerHTML = '';
     let hasAvailable = false;
     
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const todayStr = `${yyyy}-${mm}-${dd}`;
+    const isToday = (dateString === todayStr);
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    
     slots.forEach(slot => {
+        if (isToday) {
+            const [slotH, slotM] = slot.split(':').map(Number);
+            if (slotH < currentHour || (slotH === currentHour && slotM <= currentMinute)) {
+                return; // Skip past slots
+            }
+        }
+        
         const booked = slotCounts[slot];
         if(booked < maxCapacity) {
             hasAvailable = true;

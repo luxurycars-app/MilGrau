@@ -251,6 +251,68 @@
                         </div>
                     </div>
                     
+                    <!-- Durations Setting -->
+                    <div style="background: var(--bg-surface); padding: 24px; border-radius: var(--radius-lg); border: 1px solid var(--border-color);">
+                        <div class="price-input-group" style="margin-bottom: 0;">
+                            <label>Tempo Demorado por Categoria</label>
+                            <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 12px;">Defina quantas horas e minutos cada tipo de veículo demora para ser lavado.</p>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                <div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                                    <span style="display:flex; align-items:center; gap:6px; color:var(--text-primary); font-size: 13px; font-weight: 600; margin-bottom:10px;"><i class="ph ph-car-profile" style="color:var(--brand-primary);"></i> Hatch</span>
+                                    <div style="display: flex; gap: 8px;">
+                                        <div class="price-input-wrapper" style="flex:1;">
+                                            <input type="number" id="setting-hatch-h" min="0" max="10" placeholder="0" style="padding-right: 30px;">
+                                            <span style="position:absolute; right:12px; color:var(--text-secondary); font-size: 11px; font-weight: 700; pointer-events: none;">HR</span>
+                                        </div>
+                                        <div class="price-input-wrapper" style="flex:1;">
+                                            <input type="number" id="setting-hatch-m" min="0" max="59" placeholder="0" style="padding-right: 35px;">
+                                            <span style="position:absolute; right:12px; color:var(--text-secondary); font-size: 11px; font-weight: 700; pointer-events: none;">MIN</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                                    <span style="display:flex; align-items:center; gap:6px; color:var(--text-primary); font-size: 13px; font-weight: 600; margin-bottom:10px;"><i class="ph ph-car" style="color:var(--brand-primary);"></i> Sedan</span>
+                                    <div style="display: flex; gap: 8px;">
+                                        <div class="price-input-wrapper" style="flex:1;">
+                                            <input type="number" id="setting-sedan-h" min="0" max="10" placeholder="0" style="padding-right: 30px;">
+                                            <span style="position:absolute; right:12px; color:var(--text-secondary); font-size: 11px; font-weight: 700; pointer-events: none;">HR</span>
+                                        </div>
+                                        <div class="price-input-wrapper" style="flex:1;">
+                                            <input type="number" id="setting-sedan-m" min="0" max="59" placeholder="0" style="padding-right: 35px;">
+                                            <span style="position:absolute; right:12px; color:var(--text-secondary); font-size: 11px; font-weight: 700; pointer-events: none;">MIN</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                                    <span style="display:flex; align-items:center; gap:6px; color:var(--text-primary); font-size: 13px; font-weight: 600; margin-bottom:10px;"><i class="ph ph-jeep" style="color:var(--brand-primary);"></i> SUV / Picape</span>
+                                    <div style="display: flex; gap: 8px;">
+                                        <div class="price-input-wrapper" style="flex:1;">
+                                            <input type="number" id="setting-suv-h" min="0" max="10" placeholder="0" style="padding-right: 30px;">
+                                            <span style="position:absolute; right:12px; color:var(--text-secondary); font-size: 11px; font-weight: 700; pointer-events: none;">HR</span>
+                                        </div>
+                                        <div class="price-input-wrapper" style="flex:1;">
+                                            <input type="number" id="setting-suv-m" min="0" max="59" placeholder="0" style="padding-right: 35px;">
+                                            <span style="position:absolute; right:12px; color:var(--text-secondary); font-size: 11px; font-weight: 700; pointer-events: none;">MIN</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                                    <span style="display:flex; align-items:center; gap:6px; color:var(--text-primary); font-size: 13px; font-weight: 600; margin-bottom:10px;"><i class="ph ph-motorcycle" style="color:var(--brand-primary);"></i> Moto</span>
+                                    <div style="display: flex; gap: 8px;">
+                                        <div class="price-input-wrapper" style="flex:1;">
+                                            <input type="number" id="setting-moto-h" min="0" max="10" placeholder="0" style="padding-right: 30px;">
+                                            <span style="position:absolute; right:12px; color:var(--text-secondary); font-size: 11px; font-weight: 700; pointer-events: none;">HR</span>
+                                        </div>
+                                        <div class="price-input-wrapper" style="flex:1;">
+                                            <input type="number" id="setting-moto-m" min="0" max="59" placeholder="0" style="padding-right: 35px;">
+                                            <span style="position:absolute; right:12px; color:var(--text-secondary); font-size: 11px; font-weight: 700; pointer-events: none;">MIN</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <!-- Time Slots Setting -->
                     <div style="background: var(--bg-surface); padding: 24px; border-radius: var(--radius-lg); border: 1px solid var(--border-color);">
                         <div class="price-input-group" style="margin-bottom: 0;">

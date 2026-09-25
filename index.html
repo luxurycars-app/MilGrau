@@ -152,7 +152,14 @@
                             <input type="tel" id="client-phone" placeholder="(00) 00000-0000" required>
                         </div>
                     </div>
+
+                    <div class="form-group">
+                        <label>Observações (Opcional)</label>
+                        <textarea id="booking-notes" placeholder="Ex: Lavar apenas por fora, mancha no banco, etc." rows="2" style="width: 100%; padding: 0.8rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-family: 'Inter', sans-serif; resize: vertical;"></textarea>
+                    </div>
                     
+                    <!-- Honeypot -->
+                    <input type="text" id="milgrau-honeypot" name="milgrau-honeypot" style="display:none" tabindex="-1" autocomplete="off">
                     <button type="button" class="btn-primary" id="btn-next-step" style="width: 100%; margin-top: 1rem;">Próximo Passo <i class="ph ph-arrow-right" style="margin-left: 8px;"></i></button>
                     </div> <!-- End of step-1 -->
 

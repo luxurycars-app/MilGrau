@@ -230,6 +230,7 @@ const defaultSettings = {
     enableAddons: true,
     maxCapacity: 3,
     workingDays: [false, true, true, true, true, true, true], // [Sun, Mon, Tue, Wed, Thu, Fri, Sat]
+    vehicleDurations: { hatch: 60, sedan: 60, suv: 120, moto: 60 },
     msgConfirm: 'Olá, *{{clientName}}*! Seu agendamento na Estética MilGrau para *{{serviceName}}* no dia {{date}} às {{time}} foi *CONFIRMADO*! Estamos te esperando.',
     msgComplete: 'Olá, *{{clientName}}*! O serviço de *{{serviceName}}* no seu veículo foi *CONCLUÍDO*! Seu carro já está limpo e pronto para retirada na Estética MilGrau.',
     msgCancel: 'Olá, *{{clientName}}*. Infelizmente tivemos que *CANCELAR* seu agendamento para *{{serviceName}}* no dia {{date}}. Por favor, entre em contato para mais informações ou para remarcarmos.',
@@ -241,9 +242,9 @@ if (!milgrauSettings) {
     milgrauSettings = defaultSettings;
     localStorage.setItem('milgrau_settings', JSON.stringify(milgrauSettings));
 } else {
-    // Migration: add missing message templates to existing settings
+    // Migration: add missing keys to existing settings
     let updated = false;
-    ['msgConfirm', 'msgComplete', 'msgCancel', 'msgReschedule'].forEach(key => {
+    ['msgConfirm', 'msgComplete', 'msgCancel', 'msgReschedule', 'vehicleDurations'].forEach(key => {
         if (!milgrauSettings[key]) {
             milgrauSettings[key] = defaultSettings[key];
             updated = true;

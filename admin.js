@@ -1,3 +1,10 @@
+const escapeHTML = (str) => {
+    if (!str) return '';
+    return str.replace(/[&<>'"]/g, tag => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+    }[tag] || tag));
+};
+
 // App State
 var appointments = JSON.parse(localStorage.getItem('milgrau_appointments')) || [];
 
@@ -46,6 +53,29 @@ document.addEventListener('DOMContentLoaded', () => {
             cb.checked = workingDays[dayIdx];
         });
         
+        // Initialize weights
+        const durations = milgrauSettings.vehicleDurations || { hatch: 60, sedan: 60, suv: 120, moto: 60 };
+        
+        const dhHatch = document.getElementById('setting-hatch-h');
+        const dmHatch = document.getElementById('setting-hatch-m');
+        if(dhHatch) dhHatch.value = Math.floor(durations.hatch / 60);
+        if(dmHatch) dmHatch.value = durations.hatch % 60;
+        
+        const dhSedan = document.getElementById('setting-sedan-h');
+        const dmSedan = document.getElementById('setting-sedan-m');
+        if(dhSedan) dhSedan.value = Math.floor(durations.sedan / 60);
+        if(dmSedan) dmSedan.value = durations.sedan % 60;
+        
+        const dhSuv = document.getElementById('setting-suv-h');
+        const dmSuv = document.getElementById('setting-suv-m');
+        if(dhSuv) dhSuv.value = Math.floor(durations.suv / 60);
+        if(dmSuv) dmSuv.value = durations.suv % 60;
+        
+        const dhMoto = document.getElementById('setting-moto-h');
+        const dmMoto = document.getElementById('setting-moto-m');
+        if(dhMoto) dhMoto.value = Math.floor(durations.moto / 60);
+        if(dmMoto) dmMoto.value = durations.moto % 60;
+        
         // Initialize Message Templates
         const msgConfirmInput = document.getElementById('setting-msg-confirm');
         const msgCompleteInput = document.getElementById('setting-msg-complete');
@@ -79,6 +109,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     workingDays[dayIdx] = cb.checked;
                 });
                 milgrauSettings.workingDays = workingDays;
+                
+                // Collect durations
+                const getMins = (prefix) => {
+                    const h = parseInt(document.getElementById(`setting-${prefix}-h`).value) || 0;
+                    const m = parseInt(document.getElementById(`setting-${prefix}-m`).value) || 0;
+                    return (h * 60) + m;
+                };
+                
+                milgrauSettings.vehicleDurations = {
+                    hatch: getMins('hatch') || 60,
+                    sedan: getMins('sedan') || 60,
+                    suv: getMins('suv') || 120,
+                    moto: getMins('moto') || 60
+                };
                 
                 // Collect Message Templates
                 const msgConfirmInput = document.getElementById('setting-msg-confirm');
@@ -349,11 +393,12 @@ function renderDashboard() {
     }
     
     todaysAppointments.forEach(app => {
+        let notesText = app.notes ? `<div style="font-size: 0.85rem; color: #a1a1aa; margin-top: 4px; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;"><i class="ph ph-chat-text"></i> ${escapeHTML(app.notes)}</div>` : '';
         tbody.innerHTML += `
             <tr>
-                <td><strong>${app.clientName}</strong></td>
-                <td>${app.clientVehicle}</td>
-                <td>${app.serviceName}</td>
+                <td><strong>${escapeHTML(app.clientName)}</strong></td>
+                <td>${escapeHTML(app.clientVehicle)}</td>
+                <td>${app.serviceName}${notesText}</td>
                 <td>${app.time}</td>
                 <td><span class="status-badge status-${app.status}">${capitalize(app.status)}</span></td>
                 <td>
@@ -397,15 +442,16 @@ function renderAllAppointments() {
             app.addons.forEach(ad => addonTotal += ad.price);
             addonText = `<br><small style="color:var(--text-secondary);">+ ${app.addons.length} Extras</small>`;
         }
+        let notesText = app.notes ? `<div style="font-size: 0.85rem; color: #a1a1aa; margin-top: 4px; padding: 4px 8px; background: rgba(255,255,255,0.05); border-radius: 4px;"><i class="ph ph-chat-text"></i> ${escapeHTML(app.notes)}</div>` : '';
         const total = formatMoney(price + addonTotal);
         
         tbody.innerHTML += `
             <tr>
                 <td>${app.date.split('-').reverse().join('/')}<br><small>${app.time}</small></td>
-                <td><strong>${app.clientName}</strong></td>
-                <td>${app.clientPhone}</td>
-                <td>${app.clientVehicle} <small style="color:var(--text-secondary);">(${app.vehicleType})</small></td>
-                <td>${app.serviceName}${addonText}</td>
+                <td><strong>${escapeHTML(app.clientName)}</strong></td>
+                <td>${escapeHTML(app.clientPhone)}</td>
+                <td>${escapeHTML(app.clientVehicle)} <small style="color:var(--text-secondary);">(${app.vehicleType})</small></td>
+                <td>${app.serviceName}${addonText}${notesText}</td>
                 <td><strong>${total}</strong></td>
                 <td><span class="status-badge status-${app.status}">${capitalize(app.status)}</span></td>
                 <td>
