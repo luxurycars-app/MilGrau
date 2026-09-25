@@ -1,0 +1,686 @@
+// Data & Configuration
+// Services are now loaded from car-database.js (milgrauServices)
+const services = typeof milgrauServices !== 'undefined' ? milgrauServices : [];
+
+// milgrauTimeSlots and milgrauSettings.maxCapacity are loaded from car-database.js
+
+// App State
+var appointments = JSON.parse(localStorage.getItem('milgrau_appointments')) || [];
+
+// Initialize App
+document.addEventListener('DOMContentLoaded', () => {
+    initNavigation();
+    renderServices();
+    renderAddons();
+    renderDashboard();
+    initCustomSelects();
+    initAutocomplete();
+    
+    const form = document.getElementById('booking-form');
+    if(form) {
+        form.addEventListener('submit', handleBookingSubmit);
+    }
+    
+    const searchInput = document.getElementById('search-client');
+    if(searchInput) {
+        searchInput.addEventListener('input', (e) => renderDashboard(e.target.value));
+    }
+
+    const dateInput = document.getElementById('booking-date');
+    if(dateInput) {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const todayString = `${yyyy}-${mm}-${dd}`;
+        
+        // Set minimum to today and default value to today
+        dateInput.min = todayString;
+        dateInput.value = todayString;
+        
+        // Automatically load slots for today
+        updateTimeSlots(todayString);
+        
+        dateInput.addEventListener('change', (e) => updateTimeSlots(e.target.value));
+    }
+
+    const serviceSelect = document.getElementById('service-select');
+    
+    if(serviceSelect) serviceSelect.addEventListener('change', updatePriceDisplay);
+    
+    // Init addons handled inside renderAddons()
+    
+    // Step Wizard Logic
+    const btnNext = document.getElementById('btn-next-step');
+    const btnPrev = document.getElementById('btn-prev-step');
+    const step1 = document.getElementById('step-1');
+    const step2 = document.getElementById('step-2');
+    
+    if(btnNext && btnPrev && step1 && step2) {
+        btnNext.addEventListener('click', () => {
+            const form = document.getElementById('booking-form');
+            // Check if step 1 fields are valid
+            if(!form.checkValidity()) {
+                const invalidElements = form.querySelectorAll(':invalid');
+                if(invalidElements.length > 0) {
+                    const firstInvalid = invalidElements[0];
+                    firstInvalid.focus();
+                    let fieldName = "este campo";
+                    if(firstInvalid.previousElementSibling && firstInvalid.previousElementSibling.tagName === 'LABEL') {
+                        fieldName = firstInvalid.previousElementSibling.innerText;
+                    }
+                    MilGrauDialog.showToast(`Por favor, preencha: ${fieldName}`, "error");
+                }
+                return;
+            }
+            
+            // Check if custom time/service is selected (they use hidden inputs)
+            const serviceId = document.getElementById('service-select').value;
+            const time = document.getElementById('booking-time').value;
+            const vehicle = document.getElementById('vehicle-type').value;
+            
+            if(!serviceId || !time || !vehicle) {
+                MilGrauDialog.showToast("Por favor, preencha todos os campos obrigatórios (Serviço, Data, Horário e Veículo).", "error");
+                return;
+            }
+            
+            step1.classList.add('hidden');
+            step2.classList.remove('hidden');
+            updatePriceDisplay(); // Ensure price is displayed on step 2
+        });
+        
+        btnPrev.addEventListener('click', () => {
+            step2.classList.add('hidden');
+            step1.classList.remove('hidden');
+        });
+    }
+});
+
+// Navigation Logic (SPA)
+function initNavigation() {
+    const navLinks = document.querySelectorAll('.nav-link');
+    
+    navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            const target = e.currentTarget.getAttribute('data-target');
+            if (target) {
+                navigateTo(target);
+            }
+        });
+    });
+}
+
+window.navigateTo = function(targetId) {
+    // Update active view
+    document.querySelectorAll('.view').forEach(view => {
+        view.classList.remove('active');
+    });
+    
+    const targetView = document.getElementById(`view-${targetId}`);
+    if(targetView) {
+        targetView.classList.add('active');
+    }
+    
+    // Update active nav link (except for dashboard icon which shouldn't change main nav active state visually unless desired)
+    document.querySelectorAll('.nav-links .nav-link').forEach(link => {
+        if(link.getAttribute('data-target') === targetId) {
+            link.classList.add('active');
+        } else {
+            link.classList.remove('active');
+        }
+    });
+
+    // Specific logic per view
+    if (targetId === 'booking') {
+        const select = document.getElementById('service-select');
+        // Pre-select service based on URL hash or just refresh
+        const urlParams = new URLSearchParams(window.location.search);
+        const serviceParam = urlParams.get('service');
+        if (serviceParam && select) {
+            select.value = serviceParam;
+        }
+    }
+    
+    if (targetId === 'dashboard') {
+        renderDashboard();
+    }
+    
+    window.scrollTo(0, 0);
+};
+
+// Render Services in Pricing View and Select Options
+function renderServices() {
+    const grid = document.querySelector('.pricing-grid');
+    const itemsContainer = document.getElementById('service-items');
+    
+    if (!grid) return;
+    grid.innerHTML = '';
+    
+    if (itemsContainer) {
+        itemsContainer.innerHTML = '';
+        const defaultOpt = document.createElement('div');
+        defaultOpt.innerHTML = 'Selecione um serviço';
+        defaultOpt.setAttribute('data-value', '');
+        itemsContainer.appendChild(defaultOpt);
+    }
+    
+    services.forEach(service => {
+        // Pricing Card
+        const card = document.createElement('div');
+        card.className = `price-card ${service.popular ? 'popular' : ''}`;
+        
+        const featuresHtml = service.features.map(f => `<li><i class="ph-fill ph-check-circle"></i> ${f}</li>`).join('');
+        
+        card.innerHTML = `
+            <div class="price-header">
+                <h3>${service.name}</h3>
+                <div class="price-value" style="font-size: 0.95rem; margin-top: 0.5rem; font-weight: normal; color: var(--text-secondary);">O preço varia pelo tamanho do veículo</div>
+            </div>
+            <ul class="price-features">
+                ${featuresHtml}
+            </ul>
+            <button class="btn-${service.popular ? 'primary' : 'secondary'} w-full" onclick="bookService('${service.id}')">Agendar Este</button>
+        `;
+        grid.appendChild(card);
+        
+        // Custom Select Option
+        if (itemsContainer) {
+            const option = document.createElement('div');
+            option.innerHTML = `${service.name}`;
+            option.setAttribute('data-value', service.id);
+            itemsContainer.appendChild(option);
+        }
+    });
+}
+
+function renderAddons() {
+    const addonsSection = document.querySelector('.addons-section');
+    const addonsContainer = document.getElementById('addons-grid-container');
+    
+    if (typeof milgrauSettings !== 'undefined' && milgrauSettings.enableAddons === false) {
+        if (addonsSection) addonsSection.style.display = 'none';
+        return;
+    } else {
+        if (addonsSection) addonsSection.style.display = 'block';
+    }
+    
+    if (!addonsContainer) return;
+    addonsContainer.innerHTML = '';
+    
+    if (typeof milgrauAddons === 'undefined') return;
+    
+    milgrauAddons.forEach(addon => {
+        const card = document.createElement('div');
+        card.className = 'addon-card';
+        card.setAttribute('data-price', addon.price);
+        card.setAttribute('data-name', addon.name);
+        
+        card.innerHTML = `
+            <div class="addon-info">
+                <span class="addon-title">${addon.name}</span>
+                <span class="addon-price">+ R$ ${addon.price},00</span>
+            </div>
+            <div class="addon-check"><i class="ph-fill ph-check-circle"></i></div>
+        `;
+        
+        card.addEventListener('click', function() {
+            this.classList.toggle('active');
+            updatePriceDisplay();
+        });
+        
+        addonsContainer.appendChild(card);
+    });
+}
+
+// Helper to pre-select and navigate
+window.bookService = function(serviceId) {
+    const hiddenInput = document.getElementById('service-select');
+    const trigger = document.querySelector('#custom-service .select-selected');
+    
+    if(hiddenInput && trigger) {
+        hiddenInput.value = serviceId;
+        const serviceObj = services.find(s => s.id === serviceId);
+        trigger.innerHTML = serviceObj ? `${serviceObj.name}` : serviceId;
+        hiddenInput.dispatchEvent(new Event('change'));
+    }
+    navigateTo('booking');
+};
+
+// Handle Booking Form
+function handleBookingSubmit(e) {
+    e.preventDefault();
+    
+    const form = document.getElementById('booking-form');
+    if(!form.checkValidity()) {
+        const invalidElements = form.querySelectorAll(':invalid');
+        if(invalidElements.length > 0) {
+            const firstInvalid = invalidElements[0];
+            firstInvalid.focus();
+            let fieldName = "este campo";
+            if(firstInvalid.previousElementSibling && firstInvalid.previousElementSibling.tagName === 'LABEL') {
+                fieldName = firstInvalid.previousElementSibling.innerText;
+            }
+            MilGrauDialog.showToast(`Por favor, preencha: ${fieldName}`, "error");
+        }
+        return;
+    }
+    
+    const serviceId = document.getElementById('service-select').value;
+    const date = document.getElementById('booking-date').value;
+    const time = document.getElementById('booking-time').value;
+    const name = document.getElementById('client-name').value;
+    const phone = document.getElementById('client-phone').value;
+    const vehicle = document.getElementById('client-vehicle').value;
+    const vehicleType = document.getElementById('vehicle-type').value;
+    const vehicleColor = document.getElementById('vehicle-color').value;
+    
+    if(!time) {
+        MilGrauDialog.showToast("Por favor, selecione um horário válido.", "error");
+        return;
+    }
+    
+    const serviceObj = services.find(s => s.id === serviceId);
+    let finalPrice = "N/A";
+    if(serviceObj && vehicleType && serviceObj.prices[vehicleType]) {
+        finalPrice = `R$ ${serviceObj.prices[vehicleType]},00`;
+    }
+    
+    const activeAddons = Array.from(document.querySelectorAll('.addon-card.active')).map(card => {
+        return {
+            name: card.getAttribute('data-name'),
+            price: parseInt(card.getAttribute('data-price'))
+        };
+    });
+
+    const appointment = {
+        id: Date.now().toString(),
+        serviceId: serviceId,
+        serviceName: serviceObj ? serviceObj.name : serviceId,
+        servicePrice: finalPrice,
+        date: date,
+        time: time,
+        clientName: name,
+        clientPhone: phone,
+        clientVehicle: vehicle,
+        vehicleType: vehicleType,
+        vehicleColor: vehicleColor,
+        addons: activeAddons,
+        status: 'pendente',
+        createdAt: new Date().toISOString()
+    };
+    
+    appointments.push(appointment);
+    saveAppointments();
+    
+    // Construct WhatsApp Message
+    const formattedDate = date.split('-').reverse().join('/');
+    let totalPriceNum = (serviceObj && serviceObj.prices[vehicleType]) ? serviceObj.prices[vehicleType] : 0;
+    
+    let addonsWaText = '';
+    if (activeAddons.length > 0) {
+        addonsWaText = '\n*--- SERVIÇOS EXTRAS ---*\n';
+        activeAddons.forEach(addon => {
+            totalPriceNum += addon.price;
+            addonsWaText += `• ${addon.name} (+ R$ ${addon.price},00)\n`;
+        });
+    }
+
+    let waMessage = `*ESTÉTICA MILGRAU - NOVO AGENDAMENTO*\n\n`;
+    waMessage += `*Cliente:* ${name}\n`;
+    waMessage += `*Contato:* ${phone}\n\n`;
+    waMessage += `*--- DADOS DO VEÍCULO ---*\n`;
+    waMessage += `*Modelo:* ${vehicle}\n`;
+    waMessage += `*Cor:* ${vehicleColor}\n`;
+    waMessage += `*Categoria:* ${vehicleType.toUpperCase()}\n\n`;
+    waMessage += `*--- DETALHES DO SERVIÇO ---*\n`;
+    waMessage += `*Lavagem:* ${serviceObj ? serviceObj.name : serviceId}\n`;
+    waMessage += `*Data:* ${formattedDate}\n`;
+    waMessage += `*Horário:* ${time}\n`;
+    waMessage += addonsWaText + `\n`;
+    waMessage += `*VALOR ESTIMADO:* *R$ ${totalPriceNum},00*\n\n`;
+    waMessage += `_Aguardando confirmação do estabelecimento._`;
+
+    const waNumber = milgrauSettings.whatsappNumber || '5549998396690';
+    const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(waMessage)}`;
+    
+    // Redirect to WhatsApp
+    window.open(waLink, '_blank');
+
+    // Show success message
+    document.getElementById('booking-form').classList.add('hidden');
+    document.getElementById('booking-success-msg').classList.remove('hidden');
+    
+    // Also reset steps
+    const step1 = document.getElementById('step-1');
+    const step2 = document.getElementById('step-2');
+    if(step1 && step2) {
+        step2.classList.add('hidden');
+        step1.classList.remove('hidden');
+        // Reset addons active state
+        document.querySelectorAll('.addon-card.active').forEach(c => c.classList.remove('active'));
+    }
+}
+
+window.resetBookingForm = function() {
+    document.getElementById('booking-form').reset();
+    document.getElementById('booking-form').classList.remove('hidden');
+    document.getElementById('booking-success-msg').classList.add('hidden');
+};
+
+// Dashboard Logic
+function renderDashboard(filter = '') {
+    const tbody = document.getElementById('appointments-tbody');
+    const emptyState = document.getElementById('empty-state');
+    const statTotal = document.getElementById('stat-total');
+    
+    if (!tbody) return;
+    
+    let filtered = appointments;
+    if (filter) {
+        const lowerFilter = filter.toLowerCase();
+        filtered = appointments.filter(a => 
+            (a.clientName && a.clientName.toLowerCase().includes(lowerFilter)) || 
+            (a.clientVehicle && a.clientVehicle.toLowerCase().includes(lowerFilter)) ||
+            (a.vehicle && a.vehicle.toLowerCase().includes(lowerFilter))
+        );
+    }
+    
+    // Sort by date/time (closest first)
+    filtered.sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
+    
+    statTotal.textContent = appointments.length;
+    
+    if (filtered.length === 0) {
+        tbody.innerHTML = '';
+        tbody.parentElement.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+    } else {
+        tbody.parentElement.classList.remove('hidden');
+        emptyState.classList.add('hidden');
+        
+        tbody.innerHTML = filtered.map(app => {
+            // Format date to DD/MM/YYYY
+            const dateObj = new Date(`${app.date}T00:00:00`);
+            const formattedDate = dateObj.toLocaleDateString('pt-BR');
+            const service = services.find(s => s.id === app.serviceId);
+            
+            const addonsText = app.addons && app.addons.length > 0 
+                ? `<br><small style="color: var(--brand-primary); font-size: 0.75rem;">+ ${app.addons.map(a => a.name).join(', ')}</small>` 
+                : '';
+            
+            return `
+            <tr>
+                <td>
+                    ${service ? service.name : (app.serviceName || 'Desconhecido')}
+                    ${addonsText}
+                </td>
+                <td>
+                    <strong>${formattedDate}</strong><br>
+                    <small class="text-secondary">${app.time}</small>
+                </td>
+                <td>
+                    <strong>${app.clientName}</strong><br>
+                    <small>${app.clientPhone}</small>
+                </td>
+                <td>
+                    ${app.clientVehicle || app.vehicle || ''} <span style="text-transform: uppercase; font-size: 0.7rem; padding: 2px 4px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-left: 5px;">${app.vehicleType || '-'}</span><br>
+                    <small class="text-secondary">Cor: ${app.vehicleColor || '-'}</small>
+                </td>
+                <td><span class="status-badge status-${app.status || 'pendente'}">${app.status || 'pendente'}</span></td>
+                <td>
+                    <button class="icon-btn btn-success" onclick="updateStatus('${app.id}', 'concluido')" title="Marcar como Concluído">
+                        <i class="ph ph-check-circle"></i>
+                    </button>
+                    <button class="icon-btn btn-danger" onclick="deleteAppointment('${app.id}')" title="Cancelar/Deletar">
+                        <i class="ph ph-trash"></i>
+                    </button>
+                </td>
+            </tr>
+            `;
+        }).join('');
+    }
+}
+
+window.deleteAppointment = function(id) {
+    MilGrauDialog.confirm('Tem certeza que deseja cancelar este agendamento?', () => {
+        appointments = appointments.filter(a => a.id !== id);
+        saveAppointments();
+        renderDashboard();
+    });
+};
+
+function saveAppointments() {
+    localStorage.setItem('milgrau_appointments', JSON.stringify(appointments));
+}
+
+// Price Calculation
+function updatePriceDisplay() {
+    const serviceId = document.getElementById('service-select').value;
+    const vehicleType = document.getElementById('vehicle-type').value;
+    const priceContainer = document.getElementById('calculated-price-container');
+    const priceDisplay = document.getElementById('calculated-price');
+    
+    if(serviceId && vehicleType) {
+        const service = services.find(s => s.id === serviceId);
+        if(service && service.prices[vehicleType]) {
+            let basePrice = service.prices[vehicleType];
+            
+            // Add addons
+            const activeAddons = document.querySelectorAll('.addon-card.active');
+            activeAddons.forEach(card => {
+                basePrice += parseInt(card.getAttribute('data-price') || 0);
+            });
+            
+            priceDisplay.innerHTML = `R$ ${basePrice},00`;
+            priceContainer.classList.remove('hidden');
+            return;
+        }
+    }
+    priceContainer.classList.add('hidden');
+}
+
+// Time Slot Calculation
+function updateTimeSlots(dateString) {
+    const timeItems = document.getElementById('time-items');
+    const timeTrigger = document.querySelector('#custom-time .select-selected');
+    const timeInput = document.getElementById('booking-time');
+    
+    if(!timeItems) return;
+    
+    if(!dateString) {
+        timeItems.innerHTML = '';
+        timeTrigger.innerHTML = 'Selecione uma data primeiro';
+        timeInput.value = '';
+        return;
+    }
+    
+    const selectedDate = new Date(dateString + 'T00:00:00'); // Prevent timezone shift
+    const dayOfWeek = selectedDate.getDay(); // 0 is Sunday, 6 is Saturday
+    const workingDays = typeof milgrauSettings !== 'undefined' && milgrauSettings.workingDays ? milgrauSettings.workingDays : [false, true, true, true, true, true, true];
+    
+    if(!workingDays[dayOfWeek]) {
+        timeItems.innerHTML = '';
+        timeTrigger.innerHTML = 'Fechado neste dia da semana';
+        timeTrigger.style.color = '#ef4444'; // red
+        timeInput.value = '';
+        return;
+    }
+    timeTrigger.style.color = ''; // reset
+    
+    // Count appointments on this date per slot
+    const slotCounts = {};
+    const slots = typeof milgrauTimeSlots !== 'undefined' ? milgrauTimeSlots : ["08:00", "09:30", "10:30", "13:30", "15:00", "16:30"];
+    const maxCapacity = typeof milgrauSettings !== 'undefined' && milgrauSettings.maxCapacity ? milgrauSettings.maxCapacity : 3;
+    
+    const dayAppointments = appointments.filter(a => a.date === dateString);
+    
+    slots.forEach(s => slotCounts[s] = 0);
+    
+    dayAppointments.forEach(app => {
+        if(slotCounts[app.time] !== undefined && app.status !== 'cancelado') {
+            slotCounts[app.time]++;
+        }
+    });
+    
+    timeItems.innerHTML = '';
+    let hasAvailable = false;
+    
+    slots.forEach(slot => {
+        const booked = slotCounts[slot];
+        if(booked < maxCapacity) {
+            hasAvailable = true;
+            const vagas = maxCapacity - booked;
+            const vagasText = vagas === 1 ? 'Última vaga!' : `${vagas} vagas disponíveis`;
+            
+            const opt = document.createElement('div');
+            opt.setAttribute('data-value', slot);
+            opt.style.display = 'flex';
+            opt.style.justifyContent = 'space-between';
+            opt.style.alignItems = 'center';
+            opt.innerHTML = `
+                <span style="font-weight: 600; font-size: 1.1rem; color: var(--text-primary);">${slot}</span>
+                <span style="font-size: 0.85rem; padding: 3px 8px; border-radius: 6px; background: ${vagas === 1 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)'}; color: ${vagas === 1 ? '#ef4444' : 'var(--brand-primary)'}; font-weight: 500;">
+                    ${vagasText}
+                </span>
+            `;
+            timeItems.appendChild(opt);
+        }
+    });
+    
+    if(!hasAvailable) {
+        timeTrigger.innerHTML = 'Nenhum horário disponível';
+        timeInput.value = '';
+    } else {
+        timeTrigger.innerHTML = 'Selecione o horário';
+        timeInput.value = '';
+    }
+}
+
+// Custom Select Logic
+function initCustomSelects() {
+    document.addEventListener('click', function(e) {
+        // Close all selects if clicking outside
+        if (!e.target.closest('.custom-select')) {
+            document.querySelectorAll('.select-items').forEach(el => el.classList.add('select-hide'));
+            document.querySelectorAll('.select-selected').forEach(el => el.classList.remove('select-arrow-active'));
+            return;
+        }
+        
+        // If clicking on a trigger
+        if (e.target.classList.contains('select-selected')) {
+            const items = e.target.nextElementSibling;
+            
+            // Close others
+            document.querySelectorAll('.select-items').forEach(el => {
+                if(el !== items) el.classList.add('select-hide');
+            });
+            document.querySelectorAll('.select-selected').forEach(el => {
+                if(el !== e.target) el.classList.remove('select-arrow-active');
+            });
+            
+            items.classList.toggle('select-hide');
+            e.target.classList.toggle('select-arrow-active');
+        }
+        
+        // If clicking on an option
+        if (e.target.parentElement && e.target.parentElement.classList.contains('select-items')) {
+            const wrapper = e.target.closest('.custom-select');
+            const trigger = wrapper.querySelector('.select-selected');
+            const hiddenInput = wrapper.nextElementSibling;
+            
+            trigger.innerHTML = e.target.innerHTML;
+            if(hiddenInput) {
+                hiddenInput.value = e.target.getAttribute('data-value');
+                hiddenInput.dispatchEvent(new Event('change'));
+            }
+            
+            // Remove same-as-selected class from all options
+            const allOptions = e.target.parentElement.querySelectorAll('div');
+            allOptions.forEach(opt => opt.removeAttribute('class'));
+            e.target.setAttribute('class', 'same-as-selected');
+            
+            e.target.parentElement.classList.add('select-hide');
+            trigger.classList.remove('select-arrow-active');
+        }
+    });
+}
+
+// Autocomplete Logic
+function initAutocomplete() {
+    const input = document.getElementById("client-vehicle");
+    const list = document.getElementById("vehicle-autocomplete-list");
+    const typeInput = document.getElementById("vehicle-type");
+    const manualSelection = document.getElementById("manual-type-selection");
+    
+    if(!input || !list) return;
+    
+    input.addEventListener("input", function() {
+        const val = this.value;
+        list.innerHTML = "";
+        
+        // Reset type when user starts typing again
+        typeInput.value = "";
+        updatePriceDisplay();
+        
+        if (!val) {
+            list.classList.add('select-hide');
+            manualSelection.classList.add('hidden');
+            return;
+        }
+        
+        let hasMatches = false;
+        
+        carDatabase.forEach(car => {
+            const fullName = `${car.brand} ${car.model}`;
+            if (fullName.toLowerCase().includes(val.toLowerCase())) {
+                hasMatches = true;
+                const div = document.createElement("div");
+                
+                const regex = new RegExp(`(${val})`, "gi");
+                div.innerHTML = fullName.replace(regex, "<strong>$1</strong>");
+                div.innerHTML += ` <small class="text-secondary">(${car.type.toUpperCase()})</small>`;
+                
+                div.addEventListener("click", function() {
+                    input.value = fullName;
+                    typeInput.value = car.type;
+                    list.innerHTML = "";
+                    list.classList.add('select-hide');
+                    manualSelection.classList.add('hidden');
+                    updatePriceDisplay();
+                    
+                    // Clear plan B selection visual state
+                    document.querySelectorAll('.btn-type').forEach(b => b.classList.remove('selected'));
+                });
+                
+                list.appendChild(div);
+            }
+        });
+        
+        if(hasMatches) {
+            list.classList.remove('select-hide');
+            manualSelection.classList.add('hidden');
+        } else {
+            list.classList.add('select-hide');
+            manualSelection.classList.remove('hidden'); // Show plan B
+        }
+    });
+    
+    // Close list on outside click
+    document.addEventListener("click", function (e) {
+        if (e.target !== input) {
+            list.innerHTML = "";
+            list.classList.add('select-hide');
+        }
+    });
+    
+    // Plan B buttons logic
+    const typeButtons = document.querySelectorAll('.btn-type');
+    typeButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            typeButtons.forEach(b => b.classList.remove('selected'));
+            this.classList.add('selected');
+            typeInput.value = this.getAttribute('data-type');
+            updatePriceDisplay();
+        });
+    });
+}
