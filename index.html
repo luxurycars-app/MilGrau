@@ -37,6 +37,16 @@
             <div class="hero">
                 <div class="hero-content">
                     <img src="logo.png" alt="MilGrau Estética Automotiva" class="hero-logo">
+                    
+                    <!-- Ultra Minimalist Neon Pill Location -->
+                    <a href="https://maps.google.com/?q=Av.+Dirceu+José+de+Almeida,+12,+Setor+Bom+Jesus,+Taguatinga" target="_blank" style="display: inline-flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255, 115, 0, 0.03); border: 1px solid rgba(255, 115, 0, 0.15); padding: 8px 18px; border-radius: 20px; text-decoration: none; margin: -0.5rem auto 2.5rem auto; transition: all 0.3s ease; box-shadow: 0 4px 20px rgba(255,115,0,0.02);" onmouseover="this.style.background='rgba(255, 115, 0, 0.08)'; this.style.borderColor='rgba(255, 115, 0, 0.3)';" onmouseout="this.style.background='rgba(255, 115, 0, 0.03)'; this.style.borderColor='rgba(255, 115, 0, 0.15)';">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <i class="ph-fill ph-map-pin" style="color: #ff8c00; font-size: 0.9rem;"></i>
+                            <span style="font-size: 0.8rem; font-weight: 500; color: #ff8c00; letter-spacing: 0.3px;">Av. Dirceu José de Almeida, 12</span>
+                        </div>
+                        <span style="font-size: 0.65rem; font-weight: 400; color: rgba(255,255,255,0.4); margin-top: 2px; text-align: center; max-width: 250px;">Taguatinga • Frente ao Mercado Ponto Certo</span>
+                    </a>
+                    
                     <h1>Perfeição Em<br>Cada Detalhe.</h1>
                     <p>Elevamos o visual do seu veículo com tratamentos premium, devolvendo o brilho e a proteção originais.</p>
                     <div class="hero-actions">
@@ -46,21 +56,47 @@
                 </div>
             </div>
             
-            <div class="features">
-                <div class="feature-card">
-                    <div class="feature-icon-wrapper"><i class="ph ph-drop"></i></div>
-                    <h3>Lavagem Detalhada</h3>
-                    <p>Limpeza profunda e segura para a pintura.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon-wrapper"><i class="ph ph-sparkle"></i></div>
-                    <h3>Polimento Premium</h3>
-                    <p>Correção de pintura e brilho extremo.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon-wrapper"><i class="ph ph-shield-check"></i></div>
-                    <h3>Vitrificação</h3>
-                    <p>Proteção cerâmica de longa duração.</p>
+
+
+            <div class="marquee-container" style="overflow: hidden; white-space: nowrap; margin-top: 1rem; margin-bottom: 8rem; padding: 1.5rem 0; border-top: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05); background: linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(30,30,30,0.5) 50%, rgba(0,0,0,0) 100%);">
+                <style>
+                    @keyframes scrollMarquee {
+                        0% { transform: translateX(0); }
+                        100% { transform: translateX(-50%); }
+                    }
+                    .marquee-content {
+                        display: inline-block;
+                        animation: scrollMarquee 25s linear infinite;
+                        font-family: 'Outfit', sans-serif;
+                        font-weight: 600;
+                        font-size: 1.2rem;
+                        color: #fff;
+                        letter-spacing: 2px;
+                        text-transform: uppercase;
+                    }
+                    .marquee-item {
+                        display: inline-flex;
+                        align-items: center;
+                        padding: 0 2rem;
+                    }
+                    .marquee-separator {
+                        color: var(--primary);
+                        margin: 0 1rem;
+                    }
+                </style>
+                <div class="marquee-content">
+                    <span class="marquee-item">LAVAGEM DETALHADA <span class="marquee-separator">✦</span></span>
+                    <span class="marquee-item">POLIMENTO PREMIUM <span class="marquee-separator">✦</span></span>
+                    <span class="marquee-item">VITRIFICAÇÃO <span class="marquee-separator">✦</span></span>
+                    <span class="marquee-item">HIGIENIZAÇÃO INTERNA <span class="marquee-separator">✦</span></span>
+                    <span class="marquee-item">TRATAMENTO DE COURO <span class="marquee-separator">✦</span></span>
+                    
+                    <!-- Duplicate for infinite scroll loop -->
+                    <span class="marquee-item">LAVAGEM DETALHADA <span class="marquee-separator">✦</span></span>
+                    <span class="marquee-item">POLIMENTO PREMIUM <span class="marquee-separator">✦</span></span>
+                    <span class="marquee-item">VITRIFICAÇÃO <span class="marquee-separator">✦</span></span>
+                    <span class="marquee-item">HIGIENIZAÇÃO INTERNA <span class="marquee-separator">✦</span></span>
+                    <span class="marquee-item">TRATAMENTO DE COURO <span class="marquee-separator">✦</span></span>
                 </div>
             </div>
         </section>
