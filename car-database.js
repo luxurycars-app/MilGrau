@@ -198,70 +198,69 @@ const defaultServices = [
         id: 'simples',
         name: 'Lavagem Simples',
         duration: 45,
-        prices: { hatch: 50, sedan: 60, suv: 70, moto: 30 },
-        features: ['Lavagem externa', 'Aspiração interna básica', 'Limpeza de vidros', 'Pretinho nos pneus'],
+        prices: { hatch: 60, sedan: 70, suv: 80, moto: 0 },
+        features: ['Lavagem externa', 'Aspira\u00e7\u00e3o interna b\u00e1sica', 'Limpeza de vidros', 'Pretinho nos pneus'],
         popular: false
     },
     {
         id: 'tradicional',
         name: 'Lavagem Tradicional',
         duration: 60,
-        prices: { hatch: 70, sedan: 80, suv: 100, moto: 45 },
-        features: ['Tudo da Simples', 'Aplicação de cera líquida', 'Limpeza de painel', 'Higienização de tapetes'],
+        prices: { hatch: 80, sedan: 100, suv: 120, moto: 0 },
+        features: ['Tudo da Simples', 'Aplica\u00e7\u00e3o de cera l\u00edquida', 'Limpeza de painel', 'Higieniza\u00e7\u00e3o de tapetes'],
         popular: true
     },
     {
         id: 'detalhada',
         name: 'Lavagem Detalhada',
         duration: 90,
-        prices: { hatch: 120, sedan: 140, suv: 160, moto: 80 },
-        features: ['Tudo da Tradicional', 'Enceramento manual', 'Limpeza de motor', 'Hidratação de couro (se houver)'],
+        prices: { hatch: 130, sedan: 150, suv: 170, moto: 0 },
+        features: ['Tudo da Tradicional', 'Enceramento manual', 'Limpeza de motor', 'Hidrata\u00e7\u00e3o de couro (se houver)'],
         popular: false
     },
     {
         id: 'exterior',
         name: 'Lavagem Exterior',
         duration: 45,
-        prices: { hatch: 60, sedan: 70, suv: 80, moto: 50 },
-        features: ['Lavagem detalhada', 'Cera de proteção', 'Revitalização de plásticos externos'],
+        prices: { hatch: 0, sedan: 0, suv: 0, moto: 0 },
+        features: ['Lavagem detalhada', 'Cera de prote\u00e7\u00e3o', 'Revitaliza\u00e7\u00e3o de pl\u00e1sticos externos'],
         popular: false
     },
     {
         id: 'interior',
         name: 'Lavagem Interior',
         duration: 45,
-        prices: { hatch: 70, sedan: 80, suv: 90, moto: 0 },
-        features: ['Higienização de bancos', 'Limpeza de painel', 'Aspiração profunda'],
+        prices: { hatch: 0, sedan: 0, suv: 0, moto: 0 },
+        features: ['Higieniza\u00e7\u00e3o de bancos', 'Limpeza de painel', 'Aspira\u00e7\u00e3o profunda'],
         popular: false
     }
 ];
 
-// Load services from localStorage, or use defaults
-var milgrauServices = JSON.parse(localStorage.getItem('milgrau_services'));
-let mustUpdate = false;
+// Always force-reset localStorage with the canonical 5 services.
+// Preserve user-customized prices from admin panel if the id matches.
+var milgrauServices = (function() {
+    var stored = null;
+    try { stored = JSON.parse(localStorage.getItem('milgrau_services')); } catch(e) {}
 
-if (!milgrauServices || milgrauServices.length === 0 || milgrauServices[0].duration === undefined) {
-    milgrauServices = defaultServices;
-    mustUpdate = true;
-} else {
-    // Force reset if not all 5 services are present (safety check)
-    if (milgrauServices.length < 5) {
-        milgrauServices = defaultServices;
-        mustUpdate = true;
-    } else {
-        // Migration: ensure ALL defaultServices exist in milgrauServices
-        defaultServices.forEach(defSrv => {
-            if (!milgrauServices.find(s => s.id === defSrv.id)) {
-                milgrauServices.push(defSrv);
-                mustUpdate = true;
-            }
-        });
-    }
-}
+    var result = defaultServices.map(function(def) {
+        // Only restore a stored entry if it's one of our known 5 IDs
+        var s = stored ? stored.find(function(x) { return x.id === def.id; }) : null;
+        if (s) {
+            return {
+                id:       def.id,
+                name:     s.name     || def.name,
+                duration: s.duration !== undefined ? s.duration : def.duration,
+                prices:   s.prices   || def.prices,
+                features: s.features || def.features,
+                popular:  s.popular  !== undefined ? s.popular  : def.popular
+            };
+        }
+        return def;
+    });
 
-if (mustUpdate) {
-    localStorage.setItem('milgrau_services', JSON.stringify(milgrauServices));
-}
+    localStorage.setItem('milgrau_services', JSON.stringify(result));
+    return result;
+})();
 
 // Global Settings (WhatsApp, etc)
 const defaultSettings = {

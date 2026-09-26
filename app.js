@@ -1,6 +1,34 @@
 // Data & Configuration
-// Services are now loaded from car-database.js (milgrauServices)
-const services = typeof milgrauServices !== 'undefined' ? milgrauServices : [];
+// Canonical list of services (order and IDs are fixed here in app.js)
+var _requiredServices = [
+    { id: 'simples',     name: 'Lavagem Simples',     duration: 45, prices: { hatch: 60,  sedan: 70,  suv: 80,  moto: 0 }, features: ['Lavagem externa', 'Aspira\u00e7\u00e3o interna b\u00e1sica', 'Limpeza de vidros', 'Pretinho nos pneus'], popular: false },
+    { id: 'tradicional', name: 'Lavagem Tradicional',  duration: 60, prices: { hatch: 80,  sedan: 100, suv: 120, moto: 0 }, features: ['Tudo da Simples', 'Aplica\u00e7\u00e3o de cera l\u00edquida', 'Limpeza de painel', 'Higieniza\u00e7\u00e3o de tapetes'], popular: true  },
+    { id: 'detalhada',   name: 'Lavagem Detalhada',    duration: 90, prices: { hatch: 130, sedan: 150, suv: 170, moto: 0 }, features: ['Tudo da Tradicional', 'Enceramento manual', 'Limpeza de motor', 'Hidrata\u00e7\u00e3o de couro (se houver)'], popular: false },
+    { id: 'exterior',    name: 'Lavagem Exterior',     duration: 45, prices: { hatch: 0,   sedan: 0,   suv: 0,   moto: 0 }, features: ['Lavagem detalhada', 'Cera de prote\u00e7\u00e3o', 'Revitaliza\u00e7\u00e3o de pl\u00e1sticos externos'], popular: false },
+    { id: 'interior',    name: 'Lavagem Interior',     duration: 45, prices: { hatch: 0,   sedan: 0,   suv: 0,   moto: 0 }, features: ['Higieniza\u00e7\u00e3o de bancos', 'Limpeza de painel', 'Aspira\u00e7\u00e3o profunda'], popular: false }
+];
+
+function getServices() {
+    // Always read FRESH from localStorage so admin price changes are instantly reflected
+    var stored = null;
+    try { stored = JSON.parse(localStorage.getItem('milgrau_services')); } catch(e) {}
+
+    // Build the canonical 5 services, merging any admin-configured prices on top
+    return _requiredServices.map(function(req) {
+        var custom = stored ? stored.find(function(s) { return s.id === req.id; }) : null;
+        if (custom) {
+            return {
+                id:       req.id,
+                name:     custom.name     || req.name,
+                duration: custom.duration !== undefined ? custom.duration : req.duration,
+                prices:   custom.prices   || req.prices,
+                features: custom.features || req.features,
+                popular:  custom.popular  !== undefined ? custom.popular  : req.popular
+            };
+        }
+        return req;
+    });
+}
 
 // milgrauTimeSlots and milgrauSettings.maxCapacity are loaded from car-database.js
 
@@ -181,7 +209,7 @@ function renderServices() {
     if (!grid) return;
     grid.innerHTML = '';
     
-    services.forEach(service => {
+    getServices().forEach(service => {
         // Pricing Card
         const card = document.createElement('div');
         card.className = `price-card ${service.popular ? 'popular' : ''}`;
@@ -231,7 +259,7 @@ function updateServicesDropdown() {
     }
     
     let hasSelected = false;
-    services.forEach(service => {
+    getServices().forEach(service => {
         const option = document.createElement('div');
         const price = service.prices[vehicleType];
         const priceText = price > 0 ? ` - R$ ${price},00` : ` - Indisponível`;
@@ -299,7 +327,7 @@ window.bookService = function(serviceId) {
     
     if(hiddenInput && trigger) {
         hiddenInput.value = serviceId;
-        const serviceObj = services.find(s => s.id === serviceId);
+        const serviceObj = getServices().find(s => s.id === serviceId);
         trigger.innerHTML = serviceObj ? `${serviceObj.name}` : serviceId;
         hiddenInput.dispatchEvent(new Event('change'));
     }
@@ -347,7 +375,7 @@ function handleBookingSubmit(e) {
         return;
     }
     
-    const serviceObj = services.find(s => s.id === serviceId);
+    const serviceObj = getServices().find(s => s.id === serviceId);
     let finalPrice = "N/A";
     if(serviceObj && vehicleType && serviceObj.prices[vehicleType]) {
         finalPrice = `R$ ${serviceObj.prices[vehicleType]},00`;
@@ -485,7 +513,7 @@ function renderDashboard(filter = '') {
             // Format date to DD/MM/YYYY
             const dateObj = new Date(`${app.date}T00:00:00`);
             const formattedDate = dateObj.toLocaleDateString('pt-BR');
-            const service = services.find(s => s.id === app.serviceId);
+            const service = getServices().find(s => s.id === app.serviceId);
             
             const addonsText = app.addons && app.addons.length > 0 
                 ? `<br><small style="color: var(--brand-primary); font-size: 0.75rem;">+ ${app.addons.map(a => a.name).join(', ')}</small>` 
@@ -538,15 +566,15 @@ function saveAppointments() {
 
 // Price Calculation
 function updatePriceDisplay() {
-    const serviceId = document.getElementById('service-select').value;
-    const vehicleType = document.getElementById('vehicle-type').value;
+    const serviceId = document.getElementById('service-select') ? document.getElementById('service-select').value : '';
+    const vehicleType = document.getElementById('vehicle-type') ? document.getElementById('vehicle-type').value : '';
     const priceContainer = document.getElementById('calculated-price-container');
     const priceDisplay = document.getElementById('calculated-price');
     
     if(serviceId && vehicleType) {
-        const service = services.find(s => s.id === serviceId);
-        if(service && service.prices[vehicleType]) {
-            let basePrice = service.prices[vehicleType];
+        const service = getServices().find(s => s.id === serviceId);
+        if(service) {
+            let basePrice = (service.prices && service.prices[vehicleType] !== undefined) ? service.prices[vehicleType] : 0;
             
             // Add addons
             const activeAddons = document.querySelectorAll('.addon-card.active');
@@ -554,12 +582,12 @@ function updatePriceDisplay() {
                 basePrice += parseInt(card.getAttribute('data-price') || 0);
             });
             
-            priceDisplay.innerHTML = `R$ ${basePrice},00`;
-            priceContainer.classList.remove('hidden');
+            if(priceDisplay) priceDisplay.innerHTML = basePrice > 0 ? `R$ ${basePrice},00` : `A Configurar`;
+            if(priceContainer) priceContainer.classList.remove('hidden');
             return;
         }
     }
-    priceContainer.classList.add('hidden');
+    if(priceContainer) priceContainer.classList.add('hidden');
 }
 
 // Time Slot Calculation

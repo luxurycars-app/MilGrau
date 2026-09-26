@@ -57,6 +57,7 @@ db.collection("milgrau_data").doc("global_state").onSnapshot((doc) => {
         if (typeof renderDashboard === 'function') renderDashboard();
         if (typeof renderAllAppointments === 'function') renderAllAppointments();
         if (typeof renderServices === 'function') renderServices();
+        if (typeof updateServicesDropdown === 'function') updateServicesDropdown();
         if (typeof renderAddons === 'function') renderAddons();
         const dateInput = document.getElementById('booking-date');
         if (dateInput && typeof updateTimeSlots === 'function') updateTimeSlots(dateInput.value);
