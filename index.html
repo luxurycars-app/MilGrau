@@ -58,7 +58,7 @@
             
 
 
-            <div class="marquee-container" style="overflow: hidden; white-space: nowrap; margin-top: 1rem; margin-bottom: 8rem; padding: 1.5rem 0; border-top: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05); background: linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(30,30,30,0.5) 50%, rgba(0,0,0,0) 100%);">
+            <div class="marquee-container" style="overflow: hidden; white-space: nowrap; margin-top: 1rem; margin-bottom: 1rem; padding: 1.5rem 0; border-top: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05); background: linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(30,30,30,0.5) 50%, rgba(0,0,0,0) 100%);">
                 <style>
                     @keyframes scrollMarquee {
                         0% { transform: translateX(0); }
@@ -99,6 +99,22 @@
                     <span class="marquee-item">TRATAMENTO DE COURO <span class="marquee-separator">✦</span></span>
                 </div>
             </div>
+
+            <!-- Professional Footer -->
+            <footer style="text-align: center; padding: 3rem 1rem 4.5rem 1rem;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                    <span style="font-family: 'Outfit', sans-serif; font-size: 0.9rem; font-weight: 600; color: rgba(255,255,255,0.7); letter-spacing: 1px; text-transform: uppercase;">
+                        Estética Automotiva MilGrau
+                    </span>
+                    <span style="font-size: 0.75rem; color: rgba(255,255,255,0.3);">
+                        &copy; 2026 Todos os direitos reservados.
+                    </span>
+                    <div style="margin-top: 1rem; display: flex; align-items: center; gap: 6px; font-size: 0.7rem; color: rgba(255,255,255,0.3); background: rgba(0,0,0,0.2); padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.02);">
+                        <span>Desenvolvido por</span>
+                        <a href="#" style="color: #ff8c00; font-weight: 600; letter-spacing: 0.5px; text-decoration: none;">IX-XIX Systems</a>
+                    </div>
+                </div>
+            </footer>
         </section>
 
         <!-- View: Services & Pricing -->
@@ -108,7 +124,13 @@
             </button>
             <div class="page-header">
                 <h2>Nossos Serviços</h2>
-                <p>Escolha o tratamento ideal para o seu veículo.</p>
+                <p>Selecione o tamanho do seu veículo para ver os preços exatos.</p>
+                <div class="type-buttons" id="services-vehicle-filter" style="margin-top: 1.5rem; justify-content: center;">
+                    <button type="button" class="btn-type selected" data-type="hatch" onclick="updateServicesView('hatch')">Hatch</button>
+                    <button type="button" class="btn-type" data-type="sedan" onclick="updateServicesView('sedan')">Sedan</button>
+                    <button type="button" class="btn-type" data-type="suv" onclick="updateServicesView('suv')">SUV</button>
+                    <button type="button" class="btn-type" data-type="moto" onclick="updateServicesView('moto')">Moto</button>
+                </div>
             </div>
             <div class="pricing-grid">
                 <!-- Populated via JS -->
@@ -127,10 +149,28 @@
 
                 <form id="booking-form" class="glass-form" novalidate>
                     <div id="step-1">
+                    <div class="form-group autocomplete-container">
+                        <label>Veículo (Marca e Modelo)</label>
+                        <input type="text" id="client-vehicle" placeholder="Ex: Toyota Corolla" required autocomplete="off">
+                        <div id="vehicle-autocomplete-list" class="autocomplete-items select-hide"></div>
+                    </div>
+                    
+                    <div id="manual-type-selection" class="hidden" style="margin-bottom: 1.5rem;">
+                        <label>Qual o tamanho do seu veículo?</label>
+                        <div class="type-buttons">
+                            <button type="button" class="btn-type" data-type="hatch">Hatch</button>
+                            <button type="button" class="btn-type" data-type="sedan">Sedan</button>
+                            <button type="button" class="btn-type" data-type="suv">SUV</button>
+                            <button type="button" class="btn-type" data-type="moto">Moto</button>
+                        </div>
+                    </div>
+
+                    <input type="hidden" id="vehicle-type" required>
+
                     <div class="form-group">
                         <label>Serviço Desejado</label>
                         <div class="custom-select" id="custom-service">
-                            <div class="select-selected">Selecione um serviço</div>
+                            <div class="select-selected">Primeiro, informe seu veículo</div>
                             <div class="select-items select-hide" id="service-items">
                                 <!-- Populated via JS -->
                             </div>
@@ -159,24 +199,6 @@
                         <label>Seu Nome</label>
                         <input type="text" id="client-name" placeholder="Ex: João Silva" required>
                     </div>
-                    
-                    <div class="form-group autocomplete-container">
-                        <label>Veículo (Marca e Modelo)</label>
-                        <input type="text" id="client-vehicle" placeholder="Ex: Toyota Corolla" required autocomplete="off">
-                        <div id="vehicle-autocomplete-list" class="autocomplete-items select-hide"></div>
-                    </div>
-                    
-                    <div id="manual-type-selection" class="hidden" style="margin-bottom: 1.5rem;">
-                        <label>Qual o tamanho do seu veículo?</label>
-                        <div class="type-buttons">
-                            <button type="button" class="btn-type" data-type="hatch">Hatch</button>
-                            <button type="button" class="btn-type" data-type="sedan">Sedan</button>
-                            <button type="button" class="btn-type" data-type="suv">SUV</button>
-                            <button type="button" class="btn-type" data-type="moto">Moto</button>
-                        </div>
-                    </div>
-
-                    <input type="hidden" id="vehicle-type" required>
                     
                     <div class="form-row">
                         <div class="form-group">
@@ -240,7 +262,7 @@
     
     <!-- Custom JS -->
     <script src="firebase-config.js?v=1"></script>
-    <script src="car-database.js?v=32"></script>
-    <script src="app.js?v=32"></script>
+    <script src="car-database.js?v=33"></script>
+    <script src="app.js?v=33"></script>
 </body>
 </html>

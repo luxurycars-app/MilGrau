@@ -6,6 +6,24 @@ const services = typeof milgrauServices !== 'undefined' ? milgrauServices : [];
 
 // App State
 var appointments = JSON.parse(localStorage.getItem('milgrau_appointments')) || [];
+let currentServicesViewType = 'hatch';
+
+window.updateServicesView = function(type) {
+    currentServicesViewType = type;
+    
+    // Update button visual state
+    const filterContainer = document.getElementById('services-vehicle-filter');
+    if (filterContainer) {
+        filterContainer.querySelectorAll('.btn-type').forEach(btn => {
+            btn.classList.remove('selected');
+            if (btn.getAttribute('data-type') === type) {
+                btn.classList.add('selected');
+            }
+        });
+    }
+    
+    renderServices();
+};
 
 // Initialize App
 document.addEventListener('DOMContentLoaded', () => {
@@ -159,30 +177,24 @@ window.navigateTo = function(targetId) {
 // Render Services in Pricing View and Select Options
 function renderServices() {
     const grid = document.querySelector('.pricing-grid');
-    const itemsContainer = document.getElementById('service-items');
     
     if (!grid) return;
     grid.innerHTML = '';
-    
-    if (itemsContainer) {
-        itemsContainer.innerHTML = '';
-        const defaultOpt = document.createElement('div');
-        defaultOpt.innerHTML = 'Selecione um serviço';
-        defaultOpt.setAttribute('data-value', '');
-        itemsContainer.appendChild(defaultOpt);
-    }
     
     services.forEach(service => {
         // Pricing Card
         const card = document.createElement('div');
         card.className = `price-card ${service.popular ? 'popular' : ''}`;
         
+        const price = service.prices[currentServicesViewType] || 0;
+        const priceDisplay = price > 0 ? `R$ ${price},00` : `Indisponível`;
+        
         const featuresHtml = service.features.map(f => `<li><i class="ph-fill ph-check-circle"></i> ${f}</li>`).join('');
         
         card.innerHTML = `
             <div class="price-header">
                 <h3>${service.name}</h3>
-                <div class="price-value" style="font-size: 0.95rem; margin-top: 0.5rem; font-weight: normal; color: var(--text-secondary);">O preço varia pelo tamanho do veículo</div>
+                <div class="price-value" style="font-size: 1.8rem; margin-top: 0.5rem; font-weight: bold; color: var(--primary);">${priceDisplay}</div>
             </div>
             <ul class="price-features">
                 ${featuresHtml}
@@ -190,15 +202,55 @@ function renderServices() {
             <button class="btn-${service.popular ? 'primary' : 'secondary'} w-full" onclick="bookService('${service.id}')">Agendar Este</button>
         `;
         grid.appendChild(card);
-        
-        // Custom Select Option
-        if (itemsContainer) {
-            const option = document.createElement('div');
-            option.innerHTML = `${service.name}`;
-            option.setAttribute('data-value', service.id);
-            itemsContainer.appendChild(option);
-        }
     });
+    
+    updateServicesDropdown();
+}
+
+function updateServicesDropdown() {
+    const itemsContainer = document.getElementById('service-items');
+    const vehicleType = document.getElementById('vehicle-type') ? document.getElementById('vehicle-type').value : '';
+    const trigger = document.querySelector('#custom-service .select-selected');
+    const hidden = document.getElementById('service-select');
+    
+    if (!itemsContainer) return;
+    
+    itemsContainer.innerHTML = '';
+    const defaultOpt = document.createElement('div');
+    const defaultText = vehicleType ? 'Selecione um serviço' : 'Primeiro, informe seu veículo';
+    defaultOpt.innerHTML = defaultText;
+    defaultOpt.setAttribute('data-value', '');
+    itemsContainer.appendChild(defaultOpt);
+    
+    if (!vehicleType) {
+        if (trigger && !trigger.innerHTML.includes('Primeiro')) {
+            trigger.innerHTML = defaultText;
+            if (hidden) { hidden.value = ''; hidden.dispatchEvent(new Event('change')); }
+        }
+        return;
+    }
+    
+    let hasSelected = false;
+    services.forEach(service => {
+        const option = document.createElement('div');
+        const price = service.prices[vehicleType];
+        const priceText = price > 0 ? ` - R$ ${price},00` : ` - Indisponível`;
+        option.innerHTML = `${service.name}<span style="color: var(--brand-primary); font-weight: bold;">${priceText}</span>`;
+        option.setAttribute('data-value', service.id);
+        
+        // Retain selection text if it was already selected
+        if (hidden && hidden.value === service.id) {
+            trigger.innerHTML = option.innerHTML;
+            hasSelected = true;
+        }
+        
+        itemsContainer.appendChild(option);
+    });
+    
+    // If we have a vehicle type but no service is selected, update trigger text
+    if (trigger && !hasSelected) {
+        trigger.innerHTML = defaultText;
+    }
 }
 
 function renderAddons() {
@@ -561,7 +613,13 @@ function updateTimeSlots(dateString) {
         dayAppointments.forEach(app => {
             if(app.status !== 'cancelado' && app.time) {
                 const startMins = timeToMins(app.time);
-                const duration = durations[app.vehicleType] || 60;
+                let duration = durations[app.vehicleType] || 60;
+                if (app.serviceId) {
+                    const srv = typeof milgrauServices !== 'undefined' ? milgrauServices.find(s => s.id === app.serviceId) : null;
+                    if (srv && srv.duration) {
+                        duration = srv.duration;
+                    }
+                }
                 const endMins = startMins + duration;
                 
                 // If this slot falls within the appointment's duration, it occupies a bay
@@ -713,6 +771,7 @@ function initAutocomplete() {
                     list.classList.add('select-hide');
                     manualSelection.classList.add('hidden');
                     updatePriceDisplay();
+                    if(typeof updateServicesDropdown === 'function') updateServicesDropdown();
                     
                     // Clear plan B selection visual state
                     document.querySelectorAll('.btn-type').forEach(b => b.classList.remove('selected'));
@@ -747,6 +806,7 @@ function initAutocomplete() {
             this.classList.add('selected');
             typeInput.value = this.getAttribute('data-type');
             updatePriceDisplay();
+            if(typeof updateServicesDropdown === 'function') updateServicesDropdown();
         });
     });
 }

@@ -644,6 +644,13 @@ function renderServicesEditor() {
                     </div>
                 </div>
                 <div class="price-input-group" style="margin-top: 16px;">
+                    <label>Tempo do Serviço (Minutos)</label>
+                    <div class="price-input-wrapper">
+                        <span>Min</span>
+                        <input type="number" data-index="${index}" value="${service.duration || 60}" onchange="updateServiceDuration(this)">
+                    </div>
+                </div>
+                <div class="price-input-group" style="margin-top: 16px;">
                     <label>Características do Serviço (uma por linha)</label>
                     <textarea data-index="${index}" onchange="updateServiceFeatures(this)" style="width: 100%; height: 80px; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: var(--text-primary); font-family: 'Outfit'; resize: vertical; margin-top: 8px;">${service.features.join('\n')}</textarea>
                 </div>
@@ -730,6 +737,16 @@ window.updateServiceName = function(input) {
     
     if (milgrauServices[index]) {
         milgrauServices[index].name = value;
+        localStorage.setItem('milgrau_services', JSON.stringify(milgrauServices));
+    }
+};
+
+window.updateServiceDuration = function(input) {
+    const index = parseInt(input.getAttribute('data-index'));
+    const value = parseInt(input.value) || 0;
+    
+    if (milgrauServices[index]) {
+        milgrauServices[index].duration = value;
         localStorage.setItem('milgrau_services', JSON.stringify(milgrauServices));
     }
 };

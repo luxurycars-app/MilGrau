@@ -195,32 +195,71 @@ const carDatabase = [
 
 const defaultServices = [
     {
-        id: 'wash',
+        id: 'simples',
         name: 'Lavagem Simples',
-        prices: { hatch: 60, sedan: 70, suv: 80, moto: 60 },
-        features: ['Lavagem externa padrão', 'Aspiração básica'],
+        duration: 45,
+        prices: { hatch: 50, sedan: 60, suv: 70, moto: 30 },
+        features: ['Lavagem externa', 'Aspiração interna básica', 'Limpeza de vidros', 'Pretinho nos pneus'],
         popular: false
     },
     {
-        id: 'traditional',
+        id: 'tradicional',
         name: 'Lavagem Tradicional',
-        prices: { hatch: 80, sedan: 100, suv: 120, moto: 80 },
-        features: ['Lavagem externa detalhada', 'Limpeza interna completa', 'Condicionamento de plásticos'],
+        duration: 60,
+        prices: { hatch: 70, sedan: 80, suv: 100, moto: 45 },
+        features: ['Tudo da Simples', 'Aplicação de cera líquida', 'Limpeza de painel', 'Higienização de tapetes'],
         popular: true
     },
     {
-        id: 'detailed',
+        id: 'detalhada',
         name: 'Lavagem Detalhada',
-        prices: { hatch: 130, sedan: 150, suv: 170, moto: 130 },
-        features: ['Lavagem minuciosa', 'Remoção de contaminações', 'Proteção com cera', 'Tratamento interno profundo'],
+        duration: 90,
+        prices: { hatch: 120, sedan: 140, suv: 160, moto: 80 },
+        features: ['Tudo da Tradicional', 'Enceramento manual', 'Limpeza de motor', 'Hidratação de couro (se houver)'],
+        popular: false
+    },
+    {
+        id: 'exterior',
+        name: 'Lavagem Exterior',
+        duration: 45,
+        prices: { hatch: 60, sedan: 70, suv: 80, moto: 50 },
+        features: ['Lavagem detalhada', 'Cera de proteção', 'Revitalização de plásticos externos'],
+        popular: false
+    },
+    {
+        id: 'interior',
+        name: 'Lavagem Interior',
+        duration: 45,
+        prices: { hatch: 70, sedan: 80, suv: 90, moto: 0 },
+        features: ['Higienização de bancos', 'Limpeza de painel', 'Aspiração profunda'],
         popular: false
     }
 ];
 
 // Load services from localStorage, or use defaults
 var milgrauServices = JSON.parse(localStorage.getItem('milgrau_services'));
-if (!milgrauServices || milgrauServices.length === 0) {
+let mustUpdate = false;
+
+if (!milgrauServices || milgrauServices.length === 0 || milgrauServices[0].duration === undefined) {
     milgrauServices = defaultServices;
+    mustUpdate = true;
+} else {
+    // Force reset if not all 5 services are present (safety check)
+    if (milgrauServices.length < 5) {
+        milgrauServices = defaultServices;
+        mustUpdate = true;
+    } else {
+        // Migration: ensure ALL defaultServices exist in milgrauServices
+        defaultServices.forEach(defSrv => {
+            if (!milgrauServices.find(s => s.id === defSrv.id)) {
+                milgrauServices.push(defSrv);
+                mustUpdate = true;
+            }
+        });
+    }
+}
+
+if (mustUpdate) {
     localStorage.setItem('milgrau_services', JSON.stringify(milgrauServices));
 }
 
