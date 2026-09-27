@@ -175,8 +175,8 @@ window.navigateTo = function(targetId) {
         targetView.classList.add('active');
     }
     
-    // Update active nav link (except for dashboard icon which shouldn't change main nav active state visually unless desired)
-    document.querySelectorAll('.nav-links .nav-link').forEach(link => {
+    // Update active nav link
+    document.querySelectorAll('.floating-nav .nav-link').forEach(link => {
         if(link.getAttribute('data-target') === targetId) {
             link.classList.add('active');
         } else {
@@ -473,9 +473,37 @@ function handleBookingSubmit(e) {
 }
 
 window.resetBookingForm = function() {
-    document.getElementById('booking-form').reset();
-    document.getElementById('booking-form').classList.remove('hidden');
+    const form = document.getElementById('booking-form');
+    if (form) {
+        form.reset();
+        form.classList.remove('hidden');
+    }
     document.getElementById('booking-success-msg').classList.add('hidden');
+    // Reset hidden inputs
+    const vehicleType = document.getElementById('vehicle-type');
+    const serviceSelect = document.getElementById('service-select');
+    const bookingTime = document.getElementById('booking-time');
+    if (vehicleType) vehicleType.value = '';
+    if (serviceSelect) serviceSelect.value = '';
+    if (bookingTime) bookingTime.value = '';
+    // Reset custom select UI
+    const serviceSelected = document.querySelector('#custom-service .select-selected');
+    if (serviceSelected) serviceSelected.innerHTML = 'Primeiro, informe seu veículo';
+    const timeSelected = document.querySelector('#custom-time .select-selected');
+    if (timeSelected) timeSelected.innerHTML = 'Selecione uma data primeiro';
+    // Reset type buttons
+    document.querySelectorAll('.btn-type').forEach(b => b.classList.remove('selected'));
+    // Reset addons
+    document.querySelectorAll('.addon-card.active').forEach(c => c.classList.remove('active'));
+    // Go back to step 1
+    const step1 = document.getElementById('step-1');
+    const step2 = document.getElementById('step-2');
+    if (step1) step1.classList.remove('hidden');
+    if (step2) step2.classList.add('hidden');
+    // Reload time slots for today
+    const dateInput = document.getElementById('booking-date');
+    if (dateInput && dateInput.value) updateTimeSlots(dateInput.value);
+    updatePriceDisplay();
 };
 
 // Dashboard Logic
