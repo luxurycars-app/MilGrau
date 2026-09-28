@@ -10,50 +10,73 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// Sincronización Inteligente entre LocalStorage y Firebase Firestore
+// Sincronização Inteligente entre LocalStorage e Firebase Firestore
 const keysToSync = ['milgrau_appointments', 'milgrau_services', 'milgrau_settings', 'milgrau_time_slots', 'milgrau_addons'];
 let isFirebaseReady = false;
 let isSyncingFromFirebase = false;
 let syncTimeout = null;
 
-// Escuchar cambios desde Firebase (para actualización en tiempo real en todos los dispositivos)
+// Timestamps de última escrita local por chave (anti-race-condition)
+// Se o admin acabou de salvar, ignoramos dados antigos do Firebase por 8 segundos
+window._localWriteTimestamps = {};
+
+// Escutar mudanças do Firebase (atualização em tempo real em todos os dispositivos)
 db.collection("milgrau_data").doc("global_state").onSnapshot((doc) => {
     if (doc.exists) {
         const data = doc.data();
-        isSyncingFromFirebase = true; // Prevenir ciclo infinito al guardar localmente
+        const firebaseUpdatedAt = data._updatedAt || 0;
+
+        isSyncingFromFirebase = true;
 
         keysToSync.forEach(key => {
             const shortKey = key.replace('milgrau_', '');
-            if (data[shortKey]) {
-                localStorage.setItem(key, JSON.stringify(data[shortKey]));
-                
-                // Actualizar variables globales en memoria si existen
+            if (data[shortKey] !== undefined && data[shortKey] !== null) {
+
+                // Anti-race-condition: se escrevemos localmente há menos de 8s,
+                // confiar na versão local e NÃO sobrescrever com dados do Firebase
+                const localWriteTime = window._localWriteTimestamps[key] || 0;
+                const secondsSinceLocalWrite = (Date.now() - localWriteTime) / 1000;
+                if (localWriteTime > 0 && secondsSinceLocalWrite < 8) {
+                    // Dado local é mais recente, pular
+                    return;
+                }
+
+                // Só aceitar se Firebase tiver dados válidos (array com itens, ou objeto não-vazio)
+                const fbValue = data[shortKey];
+                const isValidArray = Array.isArray(fbValue) && fbValue.length > 0;
+                const isValidObject = !Array.isArray(fbValue) && typeof fbValue === 'object' && fbValue !== null && Object.keys(fbValue).length > 0;
+
+                if (!isValidArray && !isValidObject) return; // Firebase tem dado inválido/vazio, não sobrescrever
+
+                localStorage.setItem(key, JSON.stringify(fbValue));
+
+                // Atualizar variáveis globais em memória se existirem
                 if (key === 'milgrau_appointments' && typeof window.appointments !== 'undefined') {
                     window.appointments.length = 0;
-                    data[shortKey].forEach(item => window.appointments.push(item));
+                    fbValue.forEach(item => window.appointments.push(item));
                 }
                 if (key === 'milgrau_services' && typeof window.milgrauServices !== 'undefined') {
                     window.milgrauServices.length = 0;
-                    data[shortKey].forEach(item => window.milgrauServices.push(item));
+                    fbValue.forEach(item => window.milgrauServices.push(item));
                 }
                 if (key === 'milgrau_settings' && typeof window.milgrauSettings !== 'undefined') {
-                    Object.assign(window.milgrauSettings, data[shortKey]);
+                    Object.assign(window.milgrauSettings, fbValue);
                 }
                 if (key === 'milgrau_time_slots' && typeof window.milgrauTimeSlots !== 'undefined') {
                     window.milgrauTimeSlots.length = 0;
-                    data[shortKey].forEach(item => window.milgrauTimeSlots.push(item));
+                    fbValue.forEach(item => window.milgrauTimeSlots.push(item));
                 }
                 if (key === 'milgrau_addons' && typeof window.milgrauAddons !== 'undefined') {
                     window.milgrauAddons.length = 0;
-                    data[shortKey].forEach(item => window.milgrauAddons.push(item));
+                    fbValue.forEach(item => window.milgrauAddons.push(item));
                 }
             }
         });
-        
+
         isSyncingFromFirebase = false;
         isFirebaseReady = true;
 
-        // Si la UI ya cargó, forzar actualización visual
+        // Se a UI já carregou, forçar atualização visual
         if (typeof renderDashboard === 'function') renderDashboard();
         if (typeof renderAllAppointments === 'function') renderAllAppointments();
         if (typeof renderServices === 'function') renderServices();
@@ -63,36 +86,41 @@ db.collection("milgrau_data").doc("global_state").onSnapshot((doc) => {
         if (dateInput && typeof updateTimeSlots === 'function') updateTimeSlots(dateInput.value);
 
     } else {
-        // Es la primera vez que se usa Firebase en este proyecto, subir datos locales iniciales
+        // Primeira vez: subir dados locais para Firebase
         isFirebaseReady = true;
         syncToFirebase();
     }
 });
 
-// Interceptar todos los guardados locales (localStorage.setItem) para subirlos a Firebase automáticamente
-const originalSetItem = localStorage.setItem;
+// Interceptar todos os saves locais (localStorage.setItem) para subir ao Firebase
+const originalSetItem = localStorage.setItem.bind(localStorage);
 localStorage.setItem = function(key, value) {
-    originalSetItem.apply(this, arguments);
-    
-    // Si la clave es de nuestro sistema y no proviene de una actualización de Firebase, subirla
-    if (isFirebaseReady && keysToSync.includes(key) && !isSyncingFromFirebase) {
-        syncToFirebase();
+    originalSetItem(key, value);
+
+    if (keysToSync.includes(key) && !isSyncingFromFirebase) {
+        // Registrar timestamp da escrita local (anti-race-condition)
+        window._localWriteTimestamps[key] = Date.now();
+
+        if (isFirebaseReady) {
+            syncToFirebase();
+        }
     }
 };
 
-// Función para subir los datos locales a Firebase agrupados (debounce)
+// Subir dados locais ao Firebase (debounce reduzido para 300ms)
 function syncToFirebase() {
     clearTimeout(syncTimeout);
     syncTimeout = setTimeout(() => {
-        const data = {};
+        const data = { _updatedAt: Date.now() };
         keysToSync.forEach(key => {
             const shortKey = key.replace('milgrau_', '');
-            data[shortKey] = JSON.parse(localStorage.getItem(key)) || [];
-            // Si es un objeto en lugar de arreglo, parsear o asignar null
-            if (key === 'milgrau_settings') {
-                data[shortKey] = JSON.parse(localStorage.getItem(key)) || null;
-            }
+            try {
+                const raw = localStorage.getItem(key);
+                if (raw) {
+                    data[shortKey] = JSON.parse(raw);
+                }
+            } catch(e) {}
         });
-        db.collection("milgrau_data").doc("global_state").set(data).catch(console.error);
-    }, 1000); // Esperar 1 segundo de inactividad antes de subir (evita múltiples escrituras simultáneas)
+        db.collection("milgrau_data").doc("global_state").set(data, { merge: true }).catch(console.error);
+    }, 300); // 300ms debounce - muito mais rápido que antes (era 1000ms)
 }
