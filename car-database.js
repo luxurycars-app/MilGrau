@@ -199,7 +199,7 @@ const defaultServices = [
         name: 'Lavagem Simples',
         duration: 45,
         prices: { hatch: 60, sedan: 70, suv: 80, moto: 0 },
-        features: ['Lavagem externa', 'Aspira\u00e7\u00e3o interna b\u00e1sica', 'Limpeza de vidros', 'Pretinho nos pneus'],
+        features: ['INTERIOR', 'Aspiração geral', 'Limpeza antibactericida', 'Limpeza de entrada de portas', 'Limpeza dos tapetes', 'Limpeza dos vidros', 'EXTERIOR', 'Lavagem externa com snow foam', 'Limpeza das rodas', 'Limpeza da caixa de rodas', 'Secagem do veículo'],
         popular: false
     },
     {
@@ -207,7 +207,7 @@ const defaultServices = [
         name: 'Lavagem Tradicional',
         duration: 60,
         prices: { hatch: 80, sedan: 100, suv: 120, moto: 0 },
-        features: ['Tudo da Simples', 'Aplica\u00e7\u00e3o de cera l\u00edquida', 'Limpeza de painel', 'Higieniza\u00e7\u00e3o de tapetes'],
+        features: ['INTERIOR', 'Aspiração geral', 'Limpeza antibactericida', 'Limpeza de entrada de portas', 'Limpeza dos vidros', 'Revitalização', 'EXTERIOR', 'Lavagem externa com snow foam', 'Limpeza das rodas', 'Limpeza da caixa de rodas', 'Secagem do veículo', 'Revitalização de plásticos e borrachas', 'Selante de pneus', 'Cera cristalizadora'],
         popular: true
     },
     {
@@ -215,7 +215,7 @@ const defaultServices = [
         name: 'Lavagem Detalhada',
         duration: 90,
         prices: { hatch: 130, sedan: 150, suv: 170, moto: 0 },
-        features: ['Tudo da Tradicional', 'Enceramento manual', 'Limpeza de motor', 'Hidrata\u00e7\u00e3o de couro (se houver)'],
+        features: ['INTERIOR', 'Aspiração geral', 'Limpeza antibactericida', 'Limpeza de entrada de portas', 'Limpeza dos vidros', 'Limpeza do teto', 'Limpeza das pedaleiras', 'Higienização dos bancos', 'Hidratação dos plásticos e borrachas', 'EXTERIOR', 'Lavagem externa com snow foam', 'Limpeza das rodas', 'Limpeza da caixa de rodas', 'Limpeza compartimento combustível', 'Secagem do veículo', 'Revitalização', 'Selante de pneus', 'Cera blend 4 meses de proteção'],
         popular: false
     },
     {

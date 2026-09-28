@@ -1,9 +1,9 @@
 // Data & Configuration
 // Canonical list of services (order and IDs are fixed here in app.js)
 var _requiredServices = [
-    { id: 'simples',     name: 'Lavagem Simples',     duration: 45, prices: { hatch: 60,  sedan: 70,  suv: 80,  moto: 0 }, features: ['Lavagem externa', 'Aspira\u00e7\u00e3o interna b\u00e1sica', 'Limpeza de vidros', 'Pretinho nos pneus'], popular: false },
-    { id: 'tradicional', name: 'Lavagem Tradicional',  duration: 60, prices: { hatch: 80,  sedan: 100, suv: 120, moto: 0 }, features: ['Tudo da Simples', 'Aplica\u00e7\u00e3o de cera l\u00edquida', 'Limpeza de painel', 'Higieniza\u00e7\u00e3o de tapetes'], popular: true  },
-    { id: 'detalhada',   name: 'Lavagem Detalhada',    duration: 90, prices: { hatch: 130, sedan: 150, suv: 170, moto: 0 }, features: ['Tudo da Tradicional', 'Enceramento manual', 'Limpeza de motor', 'Hidrata\u00e7\u00e3o de couro (se houver)'], popular: false },
+    { id: 'simples',     name: 'Lavagem Simples',     duration: 45, prices: { hatch: 60,  sedan: 70,  suv: 80,  moto: 0 }, features: ['INTERIOR', 'Aspiração geral', 'Limpeza antibactericida', 'Limpeza de entrada de portas', 'Limpeza dos tapetes', 'Limpeza dos vidros', 'EXTERIOR', 'Lavagem externa com snow foam', 'Limpeza das rodas', 'Limpeza da caixa de rodas', 'Secagem do veículo'], popular: false },
+    { id: 'tradicional', name: 'Lavagem Tradicional',  duration: 60, prices: { hatch: 80,  sedan: 100, suv: 120, moto: 0 }, features: ['INTERIOR', 'Aspiração geral', 'Limpeza antibactericida', 'Limpeza de entrada de portas', 'Limpeza dos vidros', 'Revitalização', 'EXTERIOR', 'Lavagem externa com snow foam', 'Limpeza das rodas', 'Limpeza da caixa de rodas', 'Secagem do veículo', 'Revitalização de plásticos e borrachas', 'Selante de pneus', 'Cera cristalizadora'], popular: true  },
+    { id: 'detalhada',   name: 'Lavagem Detalhada',    duration: 90, prices: { hatch: 130, sedan: 150, suv: 170, moto: 0 }, features: ['INTERIOR', 'Aspiração geral', 'Limpeza antibactericida', 'Limpeza de entrada de portas', 'Limpeza dos vidros', 'Limpeza do teto', 'Limpeza das pedaleiras', 'Higienização dos bancos', 'Hidratação dos plásticos e borrachas', 'EXTERIOR', 'Lavagem externa com snow foam', 'Limpeza das rodas', 'Limpeza da caixa de rodas', 'Limpeza compartimento combustível', 'Secagem do veículo', 'Revitalização', 'Selante de pneus', 'Cera blend 4 meses de proteção'], popular: false },
     { id: 'exterior',    name: 'Lavagem Exterior',     duration: 45, prices: { hatch: 0,   sedan: 0,   suv: 0,   moto: 0 }, features: ['Lavagem detalhada', 'Cera de prote\u00e7\u00e3o', 'Revitaliza\u00e7\u00e3o de pl\u00e1sticos externos'], popular: false },
     { id: 'interior',    name: 'Lavagem Interior',     duration: 45, prices: { hatch: 0,   sedan: 0,   suv: 0,   moto: 0 }, features: ['Higieniza\u00e7\u00e3o de bancos', 'Limpeza de painel', 'Aspira\u00e7\u00e3o profunda'], popular: false }
 ];
@@ -217,7 +217,12 @@ function renderServices() {
         const price = service.prices[currentServicesViewType] || 0;
         const priceDisplay = price > 0 ? `R$ ${price},00` : `Indisponível`;
         
-        const featuresHtml = service.features.map(f => `<li><i class="ph-fill ph-check-circle"></i> ${f}</li>`).join('');
+        const featuresHtml = service.features.map(f => {
+            if (f.toUpperCase() === 'INTERIOR' || f.toUpperCase() === 'EXTERIOR') {
+                return `<li style="font-weight: bold; margin-top: 12px; color: var(--primary); list-style: none;"><i class="ph-fill ph-caret-right"></i> ${f}</li>`;
+            }
+            return `<li><i class="ph-fill ph-check-circle"></i> ${f}</li>`;
+        }).join('');
         
         card.innerHTML = `
             <div class="price-header">
