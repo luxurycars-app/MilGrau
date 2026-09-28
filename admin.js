@@ -162,6 +162,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    const reportFilter = document.getElementById('report-month-filter');
+    if (reportFilter) {
+        reportFilter.addEventListener('change', renderReports);
+    }
     
     // Status Filter
     const statusFilter = document.getElementById('filter-status');
@@ -313,12 +318,14 @@ function initNavigation() {
             const topbarTitle = document.getElementById('topbar-title');
             if(viewId === 'dashboard') topbarTitle.innerText = 'Visão Geral';
             if(viewId === 'appointments') topbarTitle.innerText = 'Agendamentos';
+            if(viewId === 'reports') topbarTitle.innerText = 'Relatório Financeiro';
             if(viewId === 'services') topbarTitle.innerText = 'Gestão de Serviços e Preços';
             if(viewId === 'settings') topbarTitle.innerText = 'Configurações';
 
             // Refresh data on tab change
             renderDashboard();
             renderAllAppointments();
+            if(typeof renderReports === 'function') renderReports();
             
             // Close sidebar on mobile
             if (window.innerWidth <= 768) {
@@ -467,6 +474,83 @@ function renderAllAppointments() {
         `;
     });
 }
+
+// Reports
+window.renderReports = function() {
+    const filterSelect = document.getElementById('report-month-filter');
+    const tbody = document.getElementById('reports-tbody');
+    const totalRevEl = document.getElementById('report-total-revenue');
+    const totalWashesEl = document.getElementById('report-total-washes');
+    
+    if (!filterSelect || !tbody) return;
+    
+    const concludedApps = appointments.filter(a => a.status === 'concluido');
+    const monthsSet = new Set();
+    concludedApps.forEach(a => monthsSet.add(a.date.substring(0, 7))); // YYYY-MM
+    
+    const currentFilter = filterSelect.value;
+    
+    filterSelect.innerHTML = '<option value="all">Todos os Meses</option>';
+    Array.from(monthsSet).sort().reverse().forEach(month => {
+        const [year, m] = month.split('-');
+        const opt = document.createElement('option');
+        opt.value = month;
+        opt.text = `${m}/${year}`;
+        filterSelect.appendChild(opt);
+    });
+    
+    if (monthsSet.has(currentFilter) || currentFilter === 'all') {
+        filterSelect.value = currentFilter;
+    }
+    
+    const selectedMonth = filterSelect.value;
+    const filteredApps = selectedMonth === 'all' 
+        ? concludedApps 
+        : concludedApps.filter(a => a.date.startsWith(selectedMonth));
+        
+    const dailyData = {};
+    let totalRev = 0;
+    let totalWashes = 0;
+    
+    filteredApps.forEach(app => {
+        const price = parseMoney(app.servicePrice);
+        let addonTotal = 0;
+        if (app.addons) app.addons.forEach(ad => addonTotal += ad.price);
+        const total = price + addonTotal;
+        
+        if (!dailyData[app.date]) {
+            dailyData[app.date] = { washes: 0, revenue: 0 };
+        }
+        dailyData[app.date].washes++;
+        dailyData[app.date].revenue += total;
+        
+        totalRev += total;
+        totalWashes++;
+    });
+    
+    totalRevEl.innerText = formatMoney(totalRev);
+    totalWashesEl.innerText = totalWashes;
+    
+    tbody.innerHTML = '';
+    const sortedDates = Object.keys(dailyData).sort().reverse();
+    
+    if (sortedDates.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color: var(--text-secondary);">Nenhum faturamento registrado para este período.</td></tr>`;
+        return;
+    }
+    
+    sortedDates.forEach(date => {
+        const data = dailyData[date];
+        const formattedDate = date.split('-').reverse().join('/');
+        tbody.innerHTML += `
+            <tr>
+                <td><strong>${formattedDate}</strong></td>
+                <td>${data.washes}</td>
+                <td><strong style="color: var(--success);">${formatMoney(data.revenue)}</strong></td>
+            </tr>
+        `;
+    });
+};
 
 // Actions Generator
 function getActionButtonsHTML(app) {
