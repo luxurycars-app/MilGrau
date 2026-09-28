@@ -81,11 +81,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const msgCompleteInput = document.getElementById('setting-msg-complete');
         const msgCancelInput = document.getElementById('setting-msg-cancel');
         const msgRescheduleInput = document.getElementById('setting-msg-reschedule');
+        const msgReminderInput = document.getElementById('setting-msg-reminder');
         
         if(msgConfirmInput) msgConfirmInput.value = milgrauSettings.msgConfirm || '';
         if(msgCompleteInput) msgCompleteInput.value = milgrauSettings.msgComplete || '';
         if(msgCancelInput) msgCancelInput.value = milgrauSettings.msgCancel || '';
         if(msgRescheduleInput) msgRescheduleInput.value = milgrauSettings.msgReschedule || '';
+        if(msgReminderInput) msgReminderInput.value = milgrauSettings.msgReminder || '';
     }
     
     renderTimeSlots();
@@ -129,11 +131,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const msgCompleteInput = document.getElementById('setting-msg-complete');
                 const msgCancelInput = document.getElementById('setting-msg-cancel');
                 const msgRescheduleInput = document.getElementById('setting-msg-reschedule');
+                const msgReminderInput = document.getElementById('setting-msg-reminder');
                 
                 if(msgConfirmInput) milgrauSettings.msgConfirm = msgConfirmInput.value;
                 if(msgCompleteInput) milgrauSettings.msgComplete = msgCompleteInput.value;
                 if(msgCancelInput) milgrauSettings.msgCancel = msgCancelInput.value;
                 if(msgRescheduleInput) milgrauSettings.msgReschedule = msgRescheduleInput.value;
+                if(msgReminderInput) milgrauSettings.msgReminder = msgReminderInput.value;
                 
                 // Collect time slots
                 const timeInputs = document.querySelectorAll('.timeslot-input');
@@ -470,6 +474,7 @@ function getActionButtonsHTML(app) {
         return `
             <button class="btn-icon success" title="Confirmar" onclick="changeStatus('${app.id}', 'confirmado')"><i class="ph ph-check"></i></button>
             <button class="btn-icon primary" title="Mudar Horário" onclick="openMoveModal('${app.id}')"><i class="ph ph-clock"></i></button>
+            <button class="btn-icon" style="background: var(--warning); color: white;" title="Enviar Lembrete" onclick="sendReminder('${app.id}')"><i class="ph ph-bell-ringing"></i></button>
             <button class="btn-icon danger" title="Rejeitar" onclick="changeStatus('${app.id}', 'cancelado')"><i class="ph ph-x"></i></button>
         `;
     }
@@ -477,6 +482,7 @@ function getActionButtonsHTML(app) {
         return `
             <button class="btn-icon success" title="Marcar como Concluído" onclick="changeStatus('${app.id}', 'concluido')"><i class="ph ph-flag-checkered"></i></button>
             <button class="btn-icon primary" title="Mudar Horário" onclick="openMoveModal('${app.id}')"><i class="ph ph-clock"></i></button>
+            <button class="btn-icon" style="background: var(--warning); color: white;" title="Enviar Lembrete" onclick="sendReminder('${app.id}')"><i class="ph ph-bell-ringing"></i></button>
             <button class="btn-icon danger" title="Cancelar" onclick="changeStatus('${app.id}', 'cancelado')"><i class="ph ph-x"></i></button>
         `;
     }
@@ -520,6 +526,34 @@ window.changeStatus = function(id, newStatus) {
             renderAllAppointments();
             
             // Redirect to WA
+            if(app.clientPhone) {
+                let phone = app.clientPhone.replace(/\D/g, '');
+                if(phone.startsWith('55') && phone.length > 11) {
+                    phone = phone.substring(2);
+                }
+                const waLink = `https://wa.me/55${phone}?text=${encodeURIComponent(waText)}`;
+                window.open(waLink, '_blank');
+            }
+        });
+    }
+};
+
+window.sendReminder = function(id) {
+    const index = appointments.findIndex(a => a.id === id);
+    if (index !== -1) {
+        const app = appointments[index];
+        const formattedDate = app.date.split('-').reverse().join('/');
+        
+        let template = milgrauSettings.msgReminder || '';
+        
+        // Replace variables
+        let waText = template
+            .replace(/\{\{clientName\}\}/g, app.clientName)
+            .replace(/\{\{serviceName\}\}/g, app.serviceName)
+            .replace(/\{\{date\}\}/g, formattedDate)
+            .replace(/\{\{time\}\}/g, app.time);
+
+        MilGrauDialog.confirm('Abrir WhatsApp para enviar lembrete ao cliente?', () => {
             if(app.clientPhone) {
                 let phone = app.clientPhone.replace(/\D/g, '');
                 if(phone.startsWith('55') && phone.length > 11) {

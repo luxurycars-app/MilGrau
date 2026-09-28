@@ -272,7 +272,8 @@ const defaultSettings = {
     msgConfirm: 'Olá, *{{clientName}}*! Seu agendamento na Estética MilGrau para *{{serviceName}}* no dia {{date}} às {{time}} foi *CONFIRMADO*! Estamos te esperando.',
     msgComplete: 'Olá, *{{clientName}}*! O serviço de *{{serviceName}}* no seu veículo foi *CONCLUÍDO*! Seu carro já está limpo e pronto para retirada na Estética MilGrau.',
     msgCancel: 'Olá, *{{clientName}}*. Infelizmente tivemos que *CANCELAR* seu agendamento para *{{serviceName}}* no dia {{date}}. Por favor, entre em contato para mais informações ou para remarcarmos.',
-    msgReschedule: 'Olá, *{{clientName}}*. Seu agendamento para *{{serviceName}}* na Estética MilGrau foi *REMARCADO* para o dia {{date}} às {{time}}. Qualquer dúvida, estamos à disposição.'
+    msgReschedule: 'Olá, *{{clientName}}*. Seu agendamento para *{{serviceName}}* na Estética MilGrau foi *REMARCADO* para o dia {{date}} às {{time}}. Qualquer dúvida, estamos à disposição.',
+    msgReminder: 'Olá, *{{clientName}}*! Passando para lembrar do seu agendamento hoje na Estética MilGrau para *{{serviceName}}* às *{{time}}*. Te esperamos!'
 };
 
 var milgrauSettings = JSON.parse(localStorage.getItem('milgrau_settings'));
@@ -282,7 +283,7 @@ if (!milgrauSettings) {
 } else {
     // Migration: add missing keys to existing settings
     let updated = false;
-    ['msgConfirm', 'msgComplete', 'msgCancel', 'msgReschedule', 'vehicleDurations'].forEach(key => {
+    ['msgConfirm', 'msgComplete', 'msgCancel', 'msgReschedule', 'msgReminder', 'vehicleDurations'].forEach(key => {
         if (!milgrauSettings[key]) {
             milgrauSettings[key] = defaultSettings[key];
             updated = true;
