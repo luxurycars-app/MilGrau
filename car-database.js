@@ -198,24 +198,27 @@ const defaultServices = [
         id: 'simples',
         name: 'Lavagem Simples',
         duration: 45,
-        prices: { hatch: 60, sedan: 70, suv: 80, moto: 0 },
+        prices: { hatch: 60, sedan: 70, suv: 80, moto: 30 },
         features: ['INTERIOR', 'Aspiração geral', 'Limpeza antibactericida', 'Limpeza de entrada de portas', 'Limpeza dos tapetes', 'Limpeza dos vidros', 'EXTERIOR', 'Lavagem externa com snow foam', 'Limpeza das rodas', 'Limpeza da caixa de rodas', 'Secagem do veículo'],
+        featuresMoto: ['PRÉ LAVAGEM COM SNOW', 'LAVAGEM COM SNOW', 'ESFREGAÇÃO', 'SECAGEM', 'SELANTE NOS PNEUS'],
         popular: false
     },
     {
         id: 'tradicional',
         name: 'Lavagem Tradicional',
         duration: 60,
-        prices: { hatch: 80, sedan: 100, suv: 120, moto: 0 },
+        prices: { hatch: 80, sedan: 100, suv: 120, moto: 45 },
         features: ['INTERIOR', 'Aspiração geral', 'Limpeza antibactericida', 'Limpeza de entrada de portas', 'Limpeza dos vidros', 'Revitalização', 'EXTERIOR', 'Lavagem externa com snow foam', 'Limpeza das rodas', 'Limpeza da caixa de rodas', 'Secagem do veículo', 'Revitalização de plásticos e borrachas', 'Selante de pneus', 'Cera cristalizadora'],
+        featuresMoto: ['PRÉ LAVAGEM COM SNOW', 'LAVAGEM COM SNOW', 'ESFREGAÇÃO', 'SECAGEM', 'SELANTE NOS PNEUS', 'CERA BLEND 4 MESES DE PROTEÇÃO'],
         popular: true
     },
     {
         id: 'detalhada',
         name: 'Lavagem Detalhada',
         duration: 90,
-        prices: { hatch: 130, sedan: 150, suv: 170, moto: 0 },
+        prices: { hatch: 130, sedan: 150, suv: 170, moto: 60 },
         features: ['INTERIOR', 'Aspiração geral', 'Limpeza antibactericida', 'Limpeza de entrada de portas', 'Limpeza dos vidros', 'Limpeza do teto', 'Limpeza das pedaleiras', 'Higienização dos bancos', 'Hidratação dos plásticos e borrachas', 'EXTERIOR', 'Lavagem externa com snow foam', 'Limpeza das rodas', 'Limpeza da caixa de rodas', 'Limpeza compartimento combustível', 'Secagem do veículo', 'Revitalização', 'Selante de pneus', 'Cera blend 4 meses de proteção'],
+        featuresMoto: ['PRÉ LAVAGEM COM SNOW', 'LAVAGEM COM SNOW', 'DESMONTAGEM DE CARENAGENS', 'DETALHAMENTO COM PINCEL', 'ESFREGAÇÃO', 'SECAGEM', 'SELANTE NOS PNEUS', 'CERA EM PASTA DURAÇÃO DE 6 MESES', 'REVITALIZAÇÃO DE PLÁSTICOS'],
         popular: false
     },
     {
@@ -249,23 +252,32 @@ var milgrauServices = (function() {
         var merged = defaultServices.map(function(def) {
             var s = stored.find(function(x) { return x.id === def.id; });
             if (s) {
-                // Use stored data (which came from Firebase) - never overwrite prices
+                // Ensure featuresMoto is populated if missing
+                const sFeaturesMoto = s.featuresMoto || def.featuresMoto;
+                
+                // Force update moto prices to initial default if they are missing or 0
+                const sPrices = Object.assign({}, s.prices);
+                if (sPrices.moto === 0 || sPrices.moto === undefined) {
+                    sPrices.moto = def.prices.moto;
+                }
+                
                 return {
                     id:       def.id,
                     name:     s.name     || def.name,
                     duration: s.duration !== undefined ? s.duration : def.duration,
-                    prices:   s.prices,   // ALWAYS trust stored/Firebase prices
+                    prices:   sPrices,
                     features: s.features || def.features,
+                    featuresMoto: sFeaturesMoto,
                     popular:  s.popular  !== undefined ? s.popular  : def.popular
                 };
             }
             // Service missing from stored data — add the default (new service)
             return def;
         });
-        // Only write back if a new service was added (lengths differ)
-        if (merged.length !== stored.length) {
-            localStorage.setItem('milgrau_services', JSON.stringify(merged));
-        }
+        
+        // Always write back to localStorage because we just injected featuresMoto and updated moto prices
+        localStorage.setItem('milgrau_services', JSON.stringify(merged));
+        
         return merged;
     }
 

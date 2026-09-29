@@ -226,7 +226,8 @@ function renderServices() {
             : null;
         const priceDisplay = (price !== null && price > 0) ? `R$ ${price},00` : (price === 0 ? `Indisponível` : `Indisponível`);
         
-        const featuresHtml = service.features.map(f => {
+        const activeFeatures = (currentServicesViewType === 'moto' && service.featuresMoto) ? service.featuresMoto : service.features;
+        const featuresHtml = activeFeatures.map(f => {
             if (f.toUpperCase() === 'INTERIOR' || f.toUpperCase() === 'EXTERIOR') {
                 return `<li style="font-weight: bold; margin-top: 12px; color: var(--primary); list-style: none;"><i class="ph-fill ph-caret-right"></i> ${f}</li>`;
             }
