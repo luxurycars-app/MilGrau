@@ -223,7 +223,7 @@ const defaultServices = [
         name: 'Lavagem Exterior',
         duration: 45,
         prices: { hatch: 45, sedan: 45, suv: 50, moto: 0 },
-        features: ['Lavagem detalhada', 'Cera de prote\u00e7\u00e3o', 'Revitaliza\u00e7\u00e3o de pl\u00e1sticos externos'],
+        features: ['HATCH — R$ 45,00', 'SEDAN — R$ 45,00', 'SUV — R$ 50,00'],
         popular: false
     },
     {
@@ -231,7 +231,7 @@ const defaultServices = [
         name: 'Lavagem Interior',
         duration: 45,
         prices: { hatch: 50, sedan: 50, suv: 60, moto: 0 },
-        features: ['Higieniza\u00e7\u00e3o de bancos', 'Limpeza de painel', 'Aspira\u00e7\u00e3o profunda'],
+        features: ['HATCH — R$ 50,00', 'SEDAN — R$ 50,00', 'SUV — R$ 60,00'],
         popular: false
     }
 ];
@@ -285,7 +285,8 @@ const defaultSettings = {
     msgComplete: 'Olá, *{{clientName}}*! O serviço de *{{serviceName}}* no seu veículo foi *CONCLUÍDO*! Seu carro já está limpo e pronto para retirada na Estética MilGrau.',
     msgCancel: 'Olá, *{{clientName}}*. Infelizmente tivemos que *CANCELAR* seu agendamento para *{{serviceName}}* no dia {{date}}. Por favor, entre em contato para mais informações ou para remarcarmos.',
     msgReschedule: 'Olá, *{{clientName}}*. Seu agendamento para *{{serviceName}}* na Estética MilGrau foi *REMARCADO* para o dia {{date}} às {{time}}. Qualquer dúvida, estamos à disposição.',
-    msgReminder: 'Olá, *{{clientName}}*! Passando para lembrar do seu agendamento hoje na Estética MilGrau para *{{serviceName}}* às *{{time}}*. Te esperamos!'
+    msgReminder: 'Olá, *{{clientName}}*! Passando para lembrar do seu agendamento hoje na Estética MilGrau para *{{serviceName}}* às *{{time}}*. Te esperamos!',
+    adminHash: 'QmNqcjIwMDU=' // base64 for Bcjr2005
 };
 
 var milgrauSettings = JSON.parse(localStorage.getItem('milgrau_settings'));
@@ -295,12 +296,21 @@ if (!milgrauSettings) {
 } else {
     // Migration: add missing keys to existing settings
     let updated = false;
-    ['msgConfirm', 'msgComplete', 'msgCancel', 'msgReschedule', 'msgReminder', 'vehicleDurations'].forEach(key => {
+    ['msgConfirm', 'msgComplete', 'msgCancel', 'msgReschedule', 'msgReminder', 'vehicleDurations', 'adminHash'].forEach(key => {
         if (!milgrauSettings[key]) {
             milgrauSettings[key] = defaultSettings[key];
             updated = true;
         }
     });
+    
+    // Force specific requested defaults if they are still on the old ones
+    if (milgrauSettings.vehicleDurations && milgrauSettings.vehicleDurations.hatch === 60) {
+        milgrauSettings.vehicleDurations.hatch = 90;
+        milgrauSettings.vehicleDurations.sedan = 120;
+        milgrauSettings.vehicleDurations.suv = 120;
+        updated = true;
+    }
+    
     if (updated) {
         localStorage.setItem('milgrau_settings', JSON.stringify(milgrauSettings));
     }

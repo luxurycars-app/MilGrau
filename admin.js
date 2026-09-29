@@ -17,14 +17,43 @@ document.addEventListener('DOMContentLoaded', () => {
     if (sessionStorage.getItem('milgrau_admin_auth') === 'true') {
         if(loginScreen) loginScreen.style.display = 'none';
     } else {
+        // Brute-force lockout: max 5 attempts, 30 second cooldown
+        let loginAttempts = parseInt(sessionStorage.getItem('_admin_attempts') || '0');
+        let lockUntil = parseInt(sessionStorage.getItem('_admin_lock_until') || '0');
+        
         if(loginForm) {
             loginForm.addEventListener('submit', (e) => {
                 e.preventDefault();
+                
+                const now = Date.now();
+                if (now < lockUntil) {
+                    const secsLeft = Math.ceil((lockUntil - now) / 1000);
+                    loginError.textContent = `Muitas tentativas. Aguarde ${secsLeft}s.`;
+                    loginError.style.display = 'block';
+                    return;
+                }
+                
                 const pwd = document.getElementById('admin-password').value;
-                if (pwd === 'Bcjr2005') {
+                
+                // Hash comparison (simple base64 obfuscation — not cryptographic, but stops casual snooping)
+                const expectedHash = (typeof milgrauSettings !== 'undefined' && milgrauSettings.adminHash) 
+                                        ? milgrauSettings.adminHash 
+                                        : btoa('Bcjr2005');
+                if (btoa(pwd) === expectedHash) {
                     sessionStorage.setItem('milgrau_admin_auth', 'true');
+                    sessionStorage.removeItem('_admin_attempts');
+                    sessionStorage.removeItem('_admin_lock_until');
                     loginScreen.style.display = 'none';
                 } else {
+                    loginAttempts++;
+                    sessionStorage.setItem('_admin_attempts', loginAttempts);
+                    if (loginAttempts >= 5) {
+                        const lock = Date.now() + 30000; // 30 second lockout
+                        sessionStorage.setItem('_admin_lock_until', lock);
+                        loginError.textContent = 'Conta bloqueada por 30 segundos.';
+                    } else {
+                        loginError.textContent = `Senha incorreta. Tentativa ${loginAttempts}/5.`;
+                    }
                     loginError.style.display = 'block';
                 }
             });
@@ -103,6 +132,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 milgrauSettings.whatsappNumber = newNumber;
                 milgrauSettings.enableAddons = enableAddons;
                 milgrauSettings.maxCapacity = maxCap;
+                
+                const newPwd = document.getElementById('setting-admin-pwd');
+                if (newPwd && newPwd.value.trim().length > 0) {
+                    milgrauSettings.adminHash = btoa(newPwd.value.trim());
+                    newPwd.value = ''; // clear it
+                }
                 
                 // Collect Working Days
                 const workingDays = [false, false, false, false, false, false, false];
@@ -409,9 +444,9 @@ function renderDashboard() {
             <tr>
                 <td><strong>${escapeHTML(app.clientName)}</strong></td>
                 <td>${escapeHTML(app.clientVehicle)}</td>
-                <td>${app.serviceName}${notesText}</td>
-                <td>${app.time}</td>
-                <td><span class="status-badge status-${app.status}">${capitalize(app.status)}</span></td>
+                <td>${escapeHTML(app.serviceName)}${notesText}</td>
+                <td>${escapeHTML(app.time)}</td>
+                <td><span class="status-badge status-${escapeHTML(app.status)}">${capitalize(escapeHTML(app.status))}</span></td>
                 <td>
                     <div class="action-buttons">
                         ${getActionButtonsHTML(app)}
@@ -461,10 +496,10 @@ function renderAllAppointments() {
                 <td>${app.date.split('-').reverse().join('/')}<br><small>${app.time}</small></td>
                 <td><strong>${escapeHTML(app.clientName)}</strong></td>
                 <td>${escapeHTML(app.clientPhone)}</td>
-                <td>${escapeHTML(app.clientVehicle)} <small style="color:var(--text-secondary);">(${app.vehicleType})</small></td>
-                <td>${app.serviceName}${addonText}${notesText}</td>
+                <td>${escapeHTML(app.clientVehicle)} <small style="color:var(--text-secondary);">(${escapeHTML(app.vehicleType || '')})</small></td>
+                <td>${escapeHTML(app.serviceName)}${addonText}${notesText}</td>
                 <td><strong>${total}</strong></td>
-                <td><span class="status-badge status-${app.status}">${capitalize(app.status)}</span></td>
+                <td><span class="status-badge status-${escapeHTML(app.status)}">${capitalize(escapeHTML(app.status))}</span></td>
                 <td>
                     <div class="action-buttons">
                         ${getActionButtonsHTML(app)}

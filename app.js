@@ -4,8 +4,8 @@ var _requiredServices = [
     { id: 'simples',     name: 'Lavagem Simples',     duration: 45, prices: { hatch: 60,  sedan: 70,  suv: 80,  moto: 0 }, features: ['INTERIOR', 'Aspiração geral', 'Limpeza antibactericida', 'Limpeza de entrada de portas', 'Limpeza dos tapetes', 'Limpeza dos vidros', 'EXTERIOR', 'Lavagem externa com snow foam', 'Limpeza das rodas', 'Limpeza da caixa de rodas', 'Secagem do veículo'], popular: false },
     { id: 'tradicional', name: 'Lavagem Tradicional',  duration: 60, prices: { hatch: 80,  sedan: 100, suv: 120, moto: 0 }, features: ['INTERIOR', 'Aspiração geral', 'Limpeza antibactericida', 'Limpeza de entrada de portas', 'Limpeza dos vidros', 'Revitalização', 'EXTERIOR', 'Lavagem externa com snow foam', 'Limpeza das rodas', 'Limpeza da caixa de rodas', 'Secagem do veículo', 'Revitalização de plásticos e borrachas', 'Selante de pneus', 'Cera cristalizadora'], popular: true  },
     { id: 'detalhada',   name: 'Lavagem Detalhada',    duration: 90, prices: { hatch: 130, sedan: 150, suv: 170, moto: 0 }, features: ['INTERIOR', 'Aspiração geral', 'Limpeza antibactericida', 'Limpeza de entrada de portas', 'Limpeza dos vidros', 'Limpeza do teto', 'Limpeza das pedaleiras', 'Higienização dos bancos', 'Hidratação dos plásticos e borrachas', 'EXTERIOR', 'Lavagem externa com snow foam', 'Limpeza das rodas', 'Limpeza da caixa de rodas', 'Limpeza compartimento combustível', 'Secagem do veículo', 'Revitalização', 'Selante de pneus', 'Cera blend 4 meses de proteção'], popular: false },
-    { id: 'exterior',    name: 'Lavagem Exterior',     duration: 45, prices: { hatch: 45,  sedan: 45,  suv: 50,  moto: 0 }, features: ['Lavagem detalhada', 'Cera de prote\u00e7\u00e3o', 'Revitaliza\u00e7\u00e3o de pl\u00e1sticos externos'], popular: false },
-    { id: 'interior',    name: 'Lavagem Interior',     duration: 45, prices: { hatch: 50,  sedan: 50,  suv: 60,  moto: 0 }, features: ['Higieniza\u00e7\u00e3o de bancos', 'Limpeza de painel', 'Aspira\u00e7\u00e3o profunda'], popular: false }
+    { id: 'exterior',    name: 'Lavagem Exterior',     duration: 45, prices: { hatch: 45,  sedan: 45,  suv: 50,  moto: 0 }, features: ['HATCH — R$ 45,00', 'SEDAN — R$ 45,00', 'SUV — R$ 50,00'], popular: false },
+    { id: 'interior',    name: 'Lavagem Interior',     duration: 45, prices: { hatch: 50,  sedan: 50,  suv: 60,  moto: 0 }, features: ['HATCH — R$ 50,00', 'SEDAN — R$ 50,00', 'SUV — R$ 60,00'], popular: false }
 ];
 
 function getServices() {
@@ -138,8 +138,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const time = document.getElementById('booking-time').value;
             const vehicle = document.getElementById('vehicle-type').value;
             
-            if(!serviceId || !time || !vehicle) {
-                MilGrauDialog.showToast("Por favor, preencha todos os campos obrigatórios (Serviço, Data, Horário e Veículo).", "error");
+            const vehicleName = document.getElementById('client-vehicle').value;
+            
+            if(!serviceId || !time || !vehicle || !vehicleName.trim()) {
+                MilGrauDialog.showToast("Por favor, preencha todos os campos obrigatórios (Veículo, Serviço, Data e Horário).", "error");
                 return;
             }
             
@@ -219,8 +221,10 @@ function renderServices() {
         const card = document.createElement('div');
         card.className = `price-card ${service.popular ? 'popular' : ''}`;
         
-        const price = service.prices[currentServicesViewType] || 0;
-        const priceDisplay = price > 0 ? `R$ ${price},00` : `Indisponível`;
+        const price = (service.prices && service.prices[currentServicesViewType] !== undefined)
+            ? service.prices[currentServicesViewType]
+            : null;
+        const priceDisplay = (price !== null && price > 0) ? `R$ ${price},00` : (price === 0 ? `Indisponível` : `Indisponível`);
         
         const featuresHtml = service.features.map(f => {
             if (f.toUpperCase() === 'INTERIOR' || f.toUpperCase() === 'EXTERIOR') {
@@ -243,6 +247,79 @@ function renderServices() {
     });
     
     updateServicesDropdown();
+    updatePriceDisplay();
+}
+
+// Smart Price Calculator — called whenever service/addons change
+function updatePriceDisplay() {
+    const serviceId   = document.getElementById('service-select')  ? document.getElementById('service-select').value  : '';
+    const vehicleType = document.getElementById('vehicle-type')     ? document.getElementById('vehicle-type').value     : '';
+    const vehicleName = document.getElementById('client-vehicle')   ? document.getElementById('client-vehicle').value   : '';
+    const vehicleColor= document.getElementById('vehicle-color')    ? document.getElementById('vehicle-color').value    : '';
+
+    const priceEl      = document.getElementById('calculated-price');
+    const containerEl  = document.getElementById('calculated-price-container');
+    const vehicleEl    = document.getElementById('summary-vehicle');
+    const serviceEl    = document.getElementById('summary-service');
+    const addonsEl     = document.getElementById('summary-addons');
+
+    if (!priceEl) return;
+
+    // Look up the service object
+    const serviceObj = serviceId ? getServices().find(s => s.id === serviceId) : null;
+
+    // Base price — always driven by vehicle type
+    let basePrice = 0;
+    if (serviceObj && vehicleType && serviceObj.prices[vehicleType] !== undefined) {
+        basePrice = serviceObj.prices[vehicleType];
+    }
+
+    // Sum active addons
+    let addonsTotal = 0;
+    const activeAddons = Array.from(document.querySelectorAll('.addon-card.active'));
+    activeAddons.forEach(card => {
+        addonsTotal += parseInt(card.getAttribute('data-price') || 0);
+    });
+
+    const total = basePrice + addonsTotal;
+
+    // Update price display
+    priceEl.textContent = `R$ ${total},00`;
+
+    // Update summary vehicle label
+    if (vehicleEl) {
+        const typeLabel = vehicleType ? vehicleType.charAt(0).toUpperCase() + vehicleType.slice(1) : '';
+        const colorText = vehicleColor ? ` • ${vehicleColor}` : '';
+        vehicleEl.textContent = vehicleName ? `${vehicleName}${colorText}  (${typeLabel})` : (typeLabel ? `Tipo: ${typeLabel}` : '');
+    }
+
+    // Update summary service label
+    if (serviceEl) {
+        if (serviceObj) {
+            const basePriceText = basePrice > 0 ? `R$ ${basePrice},00` : 'Indisponível';
+            serviceEl.textContent = `${serviceObj.name} — ${basePriceText}`;
+        } else {
+            serviceEl.textContent = '';
+        }
+    }
+
+    // Update addons summary
+    if (addonsEl) {
+        if (activeAddons.length > 0) {
+            const addonNames = activeAddons.map(c => `+ ${c.getAttribute('data-name')} (R$ ${c.getAttribute('data-price')},00)`).join('  •  ');
+            addonsEl.textContent = addonNames;
+            addonsEl.style.display = 'block';
+        } else {
+            addonsEl.style.display = 'none';
+        }
+    }
+
+    // Show/hide container
+    if (containerEl) {
+        if (serviceObj && vehicleType) {
+            containerEl.style.display = 'block';
+        }
+    }
 }
 
 function updateServicesDropdown() {
@@ -342,6 +419,11 @@ window.bookService = function(serviceId) {
         hiddenInput.dispatchEvent(new Event('change'));
     }
     navigateTo('booking');
+    // Refresh dropdown after navigation so prices match detected vehicle
+    setTimeout(() => {
+        if (typeof updateServicesDropdown === 'function') updateServicesDropdown();
+        if (typeof updatePriceDisplay === 'function') updatePriceDisplay();
+    }, 50);
 };
 
 // Handle Booking Form
@@ -363,21 +445,41 @@ function handleBookingSubmit(e) {
         return;
     }
     
+    // --- Input Sanitization ---
+    // Strip HTML tags from all text inputs to prevent stored XSS
+    const stripTags = (s) => String(s || '').replace(/<[^>]*>/g, '').trim().substring(0, 200);
+    const stripPhone = (s) => String(s || '').replace(/[^0-9() +\-]/g, '').trim().substring(0, 20);
+
     const serviceId = document.getElementById('service-select').value;
     const date = document.getElementById('booking-date').value;
     const time = document.getElementById('booking-time').value;
-    const name = document.getElementById('client-name').value;
-    const phone = document.getElementById('client-phone').value;
-    const vehicle = document.getElementById('client-vehicle').value;
+    const name = stripTags(document.getElementById('client-name').value);
+    const phone = stripPhone(document.getElementById('client-phone').value);
+    const vehicle = stripTags(document.getElementById('client-vehicle').value);
     const vehicleType = document.getElementById('vehicle-type').value;
-    const vehicleColor = document.getElementById('vehicle-color').value;
+    const vehicleColor = stripTags(document.getElementById('vehicle-color').value);
     const notesInput = document.getElementById('booking-notes');
-    const notes = notesInput ? notesInput.value : '';
+    const notes = stripTags(notesInput ? notesInput.value : '');
     const honeypot = document.getElementById('milgrau-honeypot');
     
     // Anti-Bot: Honeypot check
     if(honeypot && honeypot.value !== '') {
         return; // Bot detected, silently reject
+    }
+    
+    // Validate date is not in the past
+    const selectedDate = new Date(date + 'T00:00:00');
+    const todayMidnight = new Date(); todayMidnight.setHours(0,0,0,0);
+    if (selectedDate < todayMidnight) {
+        MilGrauDialog.showToast('Por favor, selecione uma data válida (hoje ou futura).', 'error');
+        return;
+    }
+    
+    // Validate phone length (at least 10 digits)
+    const digitsOnly = phone.replace(/\D/g, '');
+    if (digitsOnly.length < 10) {
+        MilGrauDialog.showToast('Por favor, informe um número de WhatsApp válido.', 'error');
+        return;
     }
     
     if(!time) {
@@ -387,8 +489,9 @@ function handleBookingSubmit(e) {
     
     const serviceObj = getServices().find(s => s.id === serviceId);
     let finalPrice = "N/A";
-    if(serviceObj && vehicleType && serviceObj.prices[vehicleType]) {
-        finalPrice = `R$ ${serviceObj.prices[vehicleType]},00`;
+    const rawPrice = serviceObj && vehicleType && serviceObj.prices ? serviceObj.prices[vehicleType] : undefined;
+    if (rawPrice !== undefined && rawPrice !== null) {
+        finalPrice = `R$ ${rawPrice},00`;
     }
     
     // Anti-Spam Check: Prevent booking the same car again on the same day if there is already an active booking
@@ -400,7 +503,7 @@ function handleBookingSubmit(e) {
     );
     
     if (duplicate) {
-        MilGrauDialog.showToast("Você já tem um agendamento ativo para este veículo hoje.", "error");
+        MilGrauDialog.showToast("Você já tem um agendamento ativo para este veículo nesta data.", "error");
         return;
     }
     
@@ -434,7 +537,7 @@ function handleBookingSubmit(e) {
     
     // Construct WhatsApp Message
     const formattedDate = date.split('-').reverse().join('/');
-    let totalPriceNum = (serviceObj && serviceObj.prices[vehicleType]) ? serviceObj.prices[vehicleType] : 0;
+    let totalPriceNum = (serviceObj && serviceObj.prices && serviceObj.prices[vehicleType] !== undefined) ? serviceObj.prices[vehicleType] : 0;
     
     let addonsWaText = '';
     if (activeAddons.length > 0) {
@@ -512,7 +615,16 @@ window.resetBookingForm = function() {
     if (step2) step2.classList.add('hidden');
     // Reload time slots for today
     const dateInput = document.getElementById('booking-date');
-    if (dateInput && dateInput.value) updateTimeSlots(dateInput.value);
+    if (dateInput) {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        dateInput.value = `${yyyy}-${mm}-${dd}`;
+        updateTimeSlots(dateInput.value);
+    }
+    // Also refresh the service dropdown (it may still show old vehicle prices)
+    if (typeof updateServicesDropdown === 'function') updateServicesDropdown();
     updatePriceDisplay();
 };
 
@@ -602,31 +714,8 @@ function saveAppointments() {
     localStorage.setItem('milgrau_appointments', JSON.stringify(appointments));
 }
 
-// Price Calculation
-function updatePriceDisplay() {
-    const serviceId = document.getElementById('service-select') ? document.getElementById('service-select').value : '';
-    const vehicleType = document.getElementById('vehicle-type') ? document.getElementById('vehicle-type').value : '';
-    const priceContainer = document.getElementById('calculated-price-container');
-    const priceDisplay = document.getElementById('calculated-price');
-    
-    if(serviceId && vehicleType) {
-        const service = getServices().find(s => s.id === serviceId);
-        if(service) {
-            let basePrice = (service.prices && service.prices[vehicleType] !== undefined) ? service.prices[vehicleType] : 0;
-            
-            // Add addons
-            const activeAddons = document.querySelectorAll('.addon-card.active');
-            activeAddons.forEach(card => {
-                basePrice += parseInt(card.getAttribute('data-price') || 0);
-            });
-            
-            if(priceDisplay) priceDisplay.innerHTML = basePrice > 0 ? `R$ ${basePrice},00` : `A Configurar`;
-            if(priceContainer) priceContainer.classList.remove('hidden');
-            return;
-        }
-    }
-    if(priceContainer) priceContainer.classList.add('hidden');
-}
+// (updatePriceDisplay is defined above, near renderServices)
+
 
 // Time Slot Calculation
 function updateTimeSlots(dateString) {
@@ -658,43 +747,63 @@ function updateTimeSlots(dateString) {
     
     // Count appointments on this date per slot
     const slotCounts = {};
-    const slots = typeof milgrauTimeSlots !== 'undefined' ? milgrauTimeSlots : ["08:00", "09:30", "10:30", "13:30", "15:00", "16:30"];
-    const maxCapacity = typeof milgrauSettings !== 'undefined' && milgrauSettings.maxCapacity ? milgrauSettings.maxCapacity : 3;
+    const slots = (typeof milgrauTimeSlots !== 'undefined' && milgrauTimeSlots.length > 0)
+        ? milgrauTimeSlots
+        : ["08:00", "09:30", "10:30", "13:30", "15:00", "16:30"];
+    const maxCapacity = (typeof milgrauSettings !== 'undefined' && milgrauSettings.maxCapacity !== undefined)
+        ? Number(milgrauSettings.maxCapacity)
+        : 3;
     
-    const dayAppointments = appointments.filter(a => a.date === dateString);
+    // Only count active appointments (not cancelled/completed)
+    const dayAppointments = appointments.filter(a =>
+        a.date === dateString &&
+        a.status !== 'cancelado' &&
+        a.status !== 'concluido'
+    );
     
-    const durations = milgrauSettings.vehicleDurations || { hatch: 60, sedan: 60, suv: 120, moto: 60 };
+    // vehicleDurations = how long a car occupies a bay (set by admin)
+    const vehicleDurations = (typeof milgrauSettings !== 'undefined' && milgrauSettings.vehicleDurations)
+        ? milgrauSettings.vehicleDurations
+        : { hatch: 90, sedan: 120, suv: 120, moto: 60 };
     
     const timeToMins = (t) => {
+        if (!t || !t.includes(':')) return 0;
         const [h, m] = t.split(':').map(Number);
         return (h * 60) + m;
     };
     
-    slots.forEach(slot => slotCounts[slot] = 0);
+    // Determine the duration of the new appointment we are trying to book
+    const vehicleTypeInput = document.getElementById('vehicle-type');
+    const serviceInput = document.getElementById('service-select');
+    const selectedVehicleType = vehicleTypeInput ? vehicleTypeInput.value : '';
+    const selectedServiceId = serviceInput ? serviceInput.value : '';
     
-    // Calculate overlapping appointments for each slot based on durations
-    slots.forEach(slot => {
-        const slotMins = timeToMins(slot);
-        
+    let newApptDuration = selectedVehicleType ? (vehicleDurations[selectedVehicleType] || 90) : 90;
+    // Specific override for solo exterior / interior
+    if (selectedServiceId === 'exterior' || selectedServiceId === 'interior') {
+        newApptDuration = 40;
+    }
+    
+    // Helper to get number of bays used at a specific minute
+    const getBaysUsedAt = (minute) => {
+        let count = 0;
         dayAppointments.forEach(app => {
-            if(app.status !== 'cancelado' && app.time) {
+            if (app.time) {
                 const startMins = timeToMins(app.time);
-                let duration = durations[app.vehicleType] || 60;
-                if (app.serviceId) {
-                    const srv = typeof milgrauServices !== 'undefined' ? milgrauServices.find(s => s.id === app.serviceId) : null;
-                    if (srv && srv.duration) {
-                        duration = srv.duration;
-                    }
-                }
-                const endMins = startMins + duration;
+                let bayDuration = vehicleDurations[app.vehicleType] || vehicleDurations.hatch || 90;
                 
-                // If this slot falls within the appointment's duration, it occupies a bay
-                if (slotMins >= startMins && slotMins < endMins) {
-                    slotCounts[slot]++;
+                // Specific override for solo exterior / interior
+                if (app.serviceId === 'exterior' || app.serviceId === 'interior') {
+                    bayDuration = 40;
                 }
+                
+                const endMins = startMins + bayDuration;
+                // strict < endMins so one car can finish exactly when another starts
+                if (minute >= startMins && minute < endMins) count++;
             }
         });
-    });
+        return count;
+    };
     
     timeItems.innerHTML = '';
     let hasAvailable = false;
@@ -716,10 +825,26 @@ function updateTimeSlots(dateString) {
             }
         }
         
-        const booked = slotCounts[slot];
-        if(booked < maxCapacity) {
+        const slotMins = timeToMins(slot);
+        
+        // Smart Check: Verify that we have at least 1 free bay for the ENTIRE duration of this vehicle's service
+        let canFit = true;
+        let maxBaysUsedDuringSlot = 0;
+        
+        // Check every 15 mins of the proposed duration to ensure a bay is free
+        for (let m = slotMins; m < slotMins + newApptDuration; m += 15) {
+            const usedAtM = getBaysUsedAt(m);
+            if (usedAtM > maxBaysUsedDuringSlot) maxBaysUsedDuringSlot = usedAtM;
+            
+            if (usedAtM >= maxCapacity) {
+                canFit = false;
+                break;
+            }
+        }
+        
+        if (canFit) {
             hasAvailable = true;
-            const vagas = maxCapacity - booked;
+            const vagas = maxCapacity - maxBaysUsedDuringSlot;
             const vagasText = vagas === 1 ? 'Última vaga!' : `${vagas} vagas disponíveis`;
             
             const opt = document.createElement('div');
@@ -783,6 +908,9 @@ function initCustomSelects() {
                 hiddenInput.value = e.target.getAttribute('data-value');
                 hiddenInput.dispatchEvent(new Event('change'));
             }
+            
+            // Recalculate price when service changes
+            if (typeof updatePriceDisplay === 'function') updatePriceDisplay();
             
             // Remove same-as-selected class from all options
             const allOptions = e.target.parentElement.querySelectorAll('div');
