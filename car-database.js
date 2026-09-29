@@ -236,30 +236,42 @@ const defaultServices = [
     }
 ];
 
-// Always force-reset localStorage with the canonical 5 services.
-// Preserve user-customized prices from admin panel if the id matches.
+// Initialize milgrauServices: if localStorage already has data (synced from Firebase),
+// use it. Only fall back to defaults for services that are completely missing.
 var milgrauServices = (function() {
     var stored = null;
     try { stored = JSON.parse(localStorage.getItem('milgrau_services')); } catch(e) {}
 
-    var result = defaultServices.map(function(def) {
-        // Only restore a stored entry if it's one of our known 5 IDs
-        var s = stored ? stored.find(function(x) { return x.id === def.id; }) : null;
-        if (s) {
-            return {
-                id:       def.id,
-                name:     s.name     || def.name,
-                duration: s.duration !== undefined ? s.duration : def.duration,
-                prices:   s.prices   || def.prices,
-                features: s.features || def.features,
-                popular:  s.popular  !== undefined ? s.popular  : def.popular
-            };
+    // If we have a valid stored array, merge gently: only fill in services
+    // that are missing from the stored version (never overwrite prices/data).
+    if (stored && Array.isArray(stored) && stored.length > 0) {
+        // Make sure all 5 canonical services exist in the stored array.
+        var merged = defaultServices.map(function(def) {
+            var s = stored.find(function(x) { return x.id === def.id; });
+            if (s) {
+                // Use stored data (which came from Firebase) - never overwrite prices
+                return {
+                    id:       def.id,
+                    name:     s.name     || def.name,
+                    duration: s.duration !== undefined ? s.duration : def.duration,
+                    prices:   s.prices,   // ALWAYS trust stored/Firebase prices
+                    features: s.features || def.features,
+                    popular:  s.popular  !== undefined ? s.popular  : def.popular
+                };
+            }
+            // Service missing from stored data — add the default (new service)
+            return def;
+        });
+        // Only write back if a new service was added (lengths differ)
+        if (merged.length !== stored.length) {
+            localStorage.setItem('milgrau_services', JSON.stringify(merged));
         }
-        return def;
-    });
+        return merged;
+    }
 
-    localStorage.setItem('milgrau_services', JSON.stringify(result));
-    return result;
+    // No stored data at all — first run, write defaults
+    localStorage.setItem('milgrau_services', JSON.stringify(defaultServices));
+    return defaultServices.slice();
 })();
 
 // Global Settings (WhatsApp, etc)

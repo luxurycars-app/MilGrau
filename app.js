@@ -9,25 +9,30 @@ var _requiredServices = [
 ];
 
 function getServices() {
-    // Always read FRESH from localStorage so admin price changes are instantly reflected
+    // Always read FRESH from localStorage (which is kept in sync with Firebase)
     var stored = null;
     try { stored = JSON.parse(localStorage.getItem('milgrau_services')); } catch(e) {}
 
-    // Build the canonical 5 services, merging any admin-configured prices on top
-    return _requiredServices.map(function(req) {
-        var custom = stored ? stored.find(function(s) { return s.id === req.id; }) : null;
-        if (custom) {
-            return {
-                id:       req.id,
-                name:     custom.name     || req.name,
-                duration: custom.duration !== undefined ? custom.duration : req.duration,
-                prices:   custom.prices   || req.prices,
-                features: custom.features || req.features,
-                popular:  custom.popular  !== undefined ? custom.popular  : req.popular
-            };
-        }
-        return req;
-    });
+    // If Firebase/admin already has all 5 services stored, use them directly
+    if (stored && Array.isArray(stored) && stored.length > 0) {
+        return _requiredServices.map(function(req) {
+            var custom = stored.find(function(s) { return s.id === req.id; });
+            if (custom) {
+                return {
+                    id:       req.id,
+                    name:     custom.name     || req.name,
+                    duration: custom.duration !== undefined ? custom.duration : req.duration,
+                    prices:   custom.prices,   // ALWAYS trust Firebase/Admin prices, never fall back to hardcoded
+                    features: custom.features || req.features,
+                    popular:  custom.popular  !== undefined ? custom.popular  : req.popular
+                };
+            }
+            return req; // Service not yet in Firebase — use default
+        });
+    }
+
+    // No stored data — first run, return hardcoded defaults
+    return _requiredServices.slice();
 }
 
 // milgrauTimeSlots and milgrauSettings.maxCapacity are loaded from car-database.js
