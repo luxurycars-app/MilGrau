@@ -222,7 +222,7 @@ const defaultServices = [
         id: 'exterior',
         name: 'Lavagem Exterior',
         duration: 45,
-        prices: { hatch: 0, sedan: 0, suv: 0, moto: 0 },
+        prices: { hatch: 45, sedan: 45, suv: 50, moto: 0 },
         features: ['Lavagem detalhada', 'Cera de prote\u00e7\u00e3o', 'Revitaliza\u00e7\u00e3o de pl\u00e1sticos externos'],
         popular: false
     },
@@ -230,7 +230,7 @@ const defaultServices = [
         id: 'interior',
         name: 'Lavagem Interior',
         duration: 45,
-        prices: { hatch: 0, sedan: 0, suv: 0, moto: 0 },
+        prices: { hatch: 50, sedan: 50, suv: 60, moto: 0 },
         features: ['Higieniza\u00e7\u00e3o de bancos', 'Limpeza de painel', 'Aspira\u00e7\u00e3o profunda'],
         popular: false
     }
@@ -268,7 +268,7 @@ const defaultSettings = {
     enableAddons: true,
     maxCapacity: 3,
     workingDays: [false, true, true, true, true, true, true], // [Sun, Mon, Tue, Wed, Thu, Fri, Sat]
-    vehicleDurations: { hatch: 60, sedan: 60, suv: 120, moto: 60 },
+    vehicleDurations: { hatch: 90, sedan: 120, suv: 120, moto: 60 },
     msgConfirm: 'Olá, *{{clientName}}*! Seu agendamento na Estética MilGrau para *{{serviceName}}* no dia {{date}} às {{time}} foi *CONFIRMADO*! Estamos te esperando.',
     msgComplete: 'Olá, *{{clientName}}*! O serviço de *{{serviceName}}* no seu veículo foi *CONCLUÍDO*! Seu carro já está limpo e pronto para retirada na Estética MilGrau.',
     msgCancel: 'Olá, *{{clientName}}*. Infelizmente tivemos que *CANCELAR* seu agendamento para *{{serviceName}}* no dia {{date}}. Por favor, entre em contato para mais informações ou para remarcarmos.',
