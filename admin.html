@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="admin.css?v=14">
+    <link rel="stylesheet" href="admin.css?v=16">
 </head>
 <body>
     <!-- Login Screen -->
@@ -396,27 +396,64 @@
                         <div class="price-input-group">
                             <label><i class="ph ph-check-circle" style="color: var(--success);"></i> Mensagem de Confirmação</label>
                             <textarea id="setting-msg-confirm" style="width: 100%; height: 80px; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: var(--text-primary); font-family: 'Outfit'; resize: vertical; margin-top: 8px;"></textarea>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px;">
+                                <button type="button" class="btn-tag" onclick="window.insertTag('setting-msg-confirm', '{{clientName}}')">+ Cliente</button>
+                                <button type="button" class="btn-tag" onclick="window.insertTag('setting-msg-confirm', '{{serviceName}}')">+ Serviço</button>
+                                <button type="button" class="btn-tag" onclick="window.insertTag('setting-msg-confirm', '{{date}}')">+ Data</button>
+                                <button type="button" class="btn-tag" onclick="window.insertTag('setting-msg-confirm', '{{time}}')">+ Hora</button>
+                            </div>
                         </div>
                         <div class="price-input-group" style="margin-top: 20px;">
                             <label><i class="ph ph-flag-checkered" style="color: var(--primary-color);"></i> Mensagem de Serviço Concluído (Pronto)</label>
                             <textarea id="setting-msg-complete" style="width: 100%; height: 80px; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: var(--text-primary); font-family: 'Outfit'; resize: vertical; margin-top: 8px;"></textarea>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px;">
+                                <button type="button" class="btn-tag" onclick="window.insertTag('setting-msg-complete', '{{clientName}}')">+ Cliente</button>
+                                <button type="button" class="btn-tag" onclick="window.insertTag('setting-msg-complete', '{{serviceName}}')">+ Serviço</button>
+                            </div>
                         </div>
                         <div class="price-input-group" style="margin-top: 20px;">
                             <label><i class="ph ph-clock-counter-clockwise" style="color: #3b82f6;"></i> Mensagem de Remarcação</label>
                             <textarea id="setting-msg-reschedule" style="width: 100%; height: 80px; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: var(--text-primary); font-family: 'Outfit'; resize: vertical; margin-top: 8px;"></textarea>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px;">
+                                <button type="button" class="btn-tag" onclick="window.insertTag('setting-msg-reschedule', '{{clientName}}')">+ Cliente</button>
+                                <button type="button" class="btn-tag" onclick="window.insertTag('setting-msg-reschedule', '{{serviceName}}')">+ Serviço</button>
+                                <button type="button" class="btn-tag" onclick="window.insertTag('setting-msg-reschedule', '{{date}}')">+ Nova Data</button>
+                                <button type="button" class="btn-tag" onclick="window.insertTag('setting-msg-reschedule', '{{time}}')">+ Nova Hora</button>
+                            </div>
                         </div>
                         <div class="price-input-group" style="margin-top: 20px;">
                             <label><i class="ph ph-bell-ringing" style="color: var(--warning);"></i> Mensagem de Lembrete</label>
                             <textarea id="setting-msg-reminder" style="width: 100%; height: 80px; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: var(--text-primary); font-family: 'Outfit'; resize: vertical; margin-top: 8px;"></textarea>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px;">
+                                <button type="button" class="btn-tag" onclick="window.insertTag('setting-msg-reminder', '{{clientName}}')">+ Cliente</button>
+                                <button type="button" class="btn-tag" onclick="window.insertTag('setting-msg-reminder', '{{serviceName}}')">+ Serviço</button>
+                                <button type="button" class="btn-tag" onclick="window.insertTag('setting-msg-reminder', '{{time}}')">+ Hora</button>
+                            </div>
                         </div>
                         <div class="price-input-group" style="margin-top: 20px; margin-bottom: 0;">
                             <label><i class="ph ph-x-circle" style="color: var(--danger);"></i> Mensagem de Rejeição/Cancelamento</label>
                             <textarea id="setting-msg-cancel" style="width: 100%; height: 80px; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: var(--text-primary); font-family: 'Outfit'; resize: vertical; margin-top: 8px;"></textarea>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px;">
+                                <button type="button" class="btn-tag" onclick="window.insertTag('setting-msg-cancel', '{{clientName}}')">+ Cliente</button>
+                                <button type="button" class="btn-tag" onclick="window.insertTag('setting-msg-cancel', '{{serviceName}}')">+ Serviço</button>
+                            </div>
                         </div>
                     </div>
                 </div>
                 
                 <button class="btn-primary" id="btn-save-settings"><i class="ph ph-floppy-disk"></i> Salvar Todas as Configurações</button>
+                
+                <div class="section-header" style="margin-top: 60px; border-top: 1px solid var(--danger); padding-top: 24px;">
+                    <h2 style="color: var(--danger);"><i class="ph ph-warning-circle"></i> Zona de Perigo</h2>
+                    <p style="color: var(--text-secondary);">Ações irreversíveis do sistema.</p>
+                </div>
+                <div style="background: rgba(239, 68, 68, 0.1); padding: 24px; border-radius: var(--radius-lg); border: 1px solid rgba(239, 68, 68, 0.3); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                    <div>
+                        <h3 style="font-size: 16px; color: var(--text-primary); margin-bottom: 4px;">Zerar Histórico de Agendamentos</h3>
+                        <p style="font-size: 13px; color: var(--text-secondary);">Apaga todos os agendamentos registrados até o momento. Isso zerará os relatórios financeiros.</p>
+                    </div>
+                    <button class="btn-secondary" id="btn-clear-history" style="border-color: var(--danger); color: var(--danger);"><i class="ph ph-trash"></i> Apagar Histórico</button>
+                </div>
             </section>
 
         </div>
@@ -444,8 +481,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore-compat.js"></script>
     
     <!-- Scripts -->
-    <script src="firebase-config.js?v=59"></script>
-    <script src="car-database.js?v=59"></script>
-    <script src="admin.js?v=59"></script>
+    <script src="firebase-config.js?v=62"></script>
+    <script src="car-database.js?v=62"></script>
+    <script src="admin.js?v=62"></script>
 </body>
 </html>

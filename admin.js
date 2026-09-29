@@ -8,6 +8,35 @@ const escapeHTML = (str) => {
 // App State
 var appointments = JSON.parse(localStorage.getItem('milgrau_appointments')) || [];
 
+// Global helper to update a specific setting key in localStorage
+window.updateSetting = function(key, value) {
+    if(typeof milgrauSettings !== 'undefined') {
+        milgrauSettings[key] = value;
+        localStorage.setItem('milgrau_settings', JSON.stringify(milgrauSettings));
+        if(typeof MilGrauDialog !== 'undefined') MilGrauDialog.showToast('Configuração salva!', 'success');
+    }
+};
+
+// Global helper to insert tags into WhatsApp message textareas
+window.insertTag = function(elementId, tag) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const text = el.value;
+    
+    el.value = text.slice(0, start) + tag + text.slice(end);
+    el.focus();
+    
+    // Move cursor after the inserted tag
+    const newPos = start + tag.length;
+    el.setSelectionRange(newPos, newPos);
+    
+    // Trigger auto-save
+    el.dispatchEvent(new Event('change'));
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     // Auth Check
     const loginScreen = document.getElementById('login-screen');
@@ -168,11 +197,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 const msgRescheduleInput = document.getElementById('setting-msg-reschedule');
                 const msgReminderInput = document.getElementById('setting-msg-reminder');
                 
-                if(msgConfirmInput) milgrauSettings.msgConfirm = msgConfirmInput.value;
-                if(msgCompleteInput) milgrauSettings.msgComplete = msgCompleteInput.value;
-                if(msgCancelInput) milgrauSettings.msgCancel = msgCancelInput.value;
-                if(msgRescheduleInput) milgrauSettings.msgReschedule = msgRescheduleInput.value;
-                if(msgReminderInput) milgrauSettings.msgReminder = msgReminderInput.value;
+                if(msgConfirmInput) {
+                    milgrauSettings.msgConfirm = msgConfirmInput.value;
+                    msgConfirmInput.addEventListener('change', (e) => window.updateSetting('msgConfirm', e.target.value));
+                }
+                if(msgCompleteInput) {
+                    milgrauSettings.msgComplete = msgCompleteInput.value;
+                    msgCompleteInput.addEventListener('change', (e) => window.updateSetting('msgComplete', e.target.value));
+                }
+                if(msgCancelInput) {
+                    milgrauSettings.msgCancel = msgCancelInput.value;
+                    msgCancelInput.addEventListener('change', (e) => window.updateSetting('msgCancel', e.target.value));
+                }
+                if(msgRescheduleInput) {
+                    milgrauSettings.msgReschedule = msgRescheduleInput.value;
+                    msgRescheduleInput.addEventListener('change', (e) => window.updateSetting('msgReschedule', e.target.value));
+                }
+                if(msgReminderInput) {
+                    milgrauSettings.msgReminder = msgReminderInput.value;
+                    msgReminderInput.addEventListener('change', (e) => window.updateSetting('msgReminder', e.target.value));
+                }
+                
                 
                 // Collect time slots
                 const timeInputs = document.querySelectorAll('.timeslot-input');
@@ -195,6 +240,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderTimeSlots();
                 MilGrauDialog.showToast('Configurações salvas com sucesso!');
             }
+        });
+    }
+
+    // Clear History Handler
+    const btnClearHistory = document.getElementById('btn-clear-history');
+    if(btnClearHistory) {
+        btnClearHistory.addEventListener('click', () => {
+            MilGrauDialog.confirm('ATENÇÃO: Você tem certeza de que deseja APAGAR TODOS os agendamentos e zerar o relatório financeiro? Esta ação é irreversível.', () => {
+                appointments.length = 0; // clear array in place
+                localStorage.setItem('milgrau_appointments', JSON.stringify([]));
+                renderDashboard();
+                renderAllAppointments();
+                if(typeof renderReports === 'function') renderReports();
+                MilGrauDialog.showToast('Histórico apagado com sucesso!', 'success');
+            });
         });
     }
 
