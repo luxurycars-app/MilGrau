@@ -224,16 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeSidebarBtn) closeSidebarBtn.addEventListener('click', toggleSidebar);
     if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
 
-    // Reset Services
-    const btnReset = document.getElementById('btn-reset-services');
-    if(btnReset) {
-        btnReset.addEventListener('click', () => {
-            MilGrauDialog.confirm('Tem certeza de que deseja restaurar os preços e serviços aos valores padrão?', () => {
-                localStorage.removeItem('milgrau_services');
-                location.reload();
-            });
-        });
-    }
+    // Reset Services logic removed to prevent user confusion
 
     // Add Service Handler
     const btnAddService = document.getElementById('btn-add-service');
@@ -870,6 +861,7 @@ window.updateServicePrice = function(input) {
     if (milgrauServices[index] && milgrauServices[index].prices[type] !== undefined) {
         milgrauServices[index].prices[type] = value;
         localStorage.setItem('milgrau_services', JSON.stringify(milgrauServices));
+        if(typeof MilGrauDialog !== 'undefined') MilGrauDialog.showToast('Preço atualizado!', 'success');
     }
 };
 
@@ -881,6 +873,7 @@ window.updateServiceFeatures = function(textarea) {
         // Split by newline and filter out empty strings
         milgrauServices[index].features = text.split('\n').map(s => s.trim()).filter(s => s.length > 0);
         localStorage.setItem('milgrau_services', JSON.stringify(milgrauServices));
+        if(typeof MilGrauDialog !== 'undefined') MilGrauDialog.showToast('Detalhes atualizados!', 'success');
     }
 };
 
@@ -891,6 +884,7 @@ window.updateServiceName = function(input) {
     if (milgrauServices[index]) {
         milgrauServices[index].name = value;
         localStorage.setItem('milgrau_services', JSON.stringify(milgrauServices));
+        if(typeof MilGrauDialog !== 'undefined') MilGrauDialog.showToast('Nome atualizado!', 'success');
     }
 };
 
@@ -901,6 +895,7 @@ window.updateServiceDuration = function(input) {
     if (milgrauServices[index]) {
         milgrauServices[index].duration = value;
         localStorage.setItem('milgrau_services', JSON.stringify(milgrauServices));
+        if(typeof MilGrauDialog !== 'undefined') MilGrauDialog.showToast('Tempo atualizado!', 'success');
     }
 };
 

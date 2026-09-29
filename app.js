@@ -217,6 +217,11 @@ function renderServices() {
     grid.innerHTML = '';
     
     getServices().forEach(service => {
+        // Skip 'exterior' and 'interior' for motorcycles
+        if (currentServicesViewType === 'moto' && (service.id === 'exterior' || service.id === 'interior')) {
+            return;
+        }
+        
         // Pricing Card
         const card = document.createElement('div');
         card.className = `price-card ${service.popular ? 'popular' : ''}`;
@@ -226,7 +231,15 @@ function renderServices() {
             : null;
         const priceDisplay = (price !== null && price > 0) ? `R$ ${price},00` : (price === 0 ? `Indisponível` : `Indisponível`);
         
-        const activeFeatures = (currentServicesViewType === 'moto' && service.featuresMoto) ? service.featuresMoto : service.features;
+        // Find default service to use as fallback in case Firebase sync overwrote featuresMoto with undefined
+        let defService = null;
+        if (typeof defaultServices !== 'undefined') {
+            defService = defaultServices.find(d => d.id === service.id);
+        }
+        
+        let fMoto = service.featuresMoto || (defService ? defService.featuresMoto : null);
+        
+        const activeFeatures = (currentServicesViewType === 'moto' && fMoto) ? fMoto : service.features;
         const featuresHtml = activeFeatures.map(f => {
             if (f.toUpperCase() === 'INTERIOR' || f.toUpperCase() === 'EXTERIOR') {
                 return `<li style="font-weight: bold; margin-top: 12px; color: var(--primary); list-style: none;"><i class="ph-fill ph-caret-right"></i> ${f}</li>`;
@@ -348,6 +361,11 @@ function updateServicesDropdown() {
     
     let hasSelected = false;
     getServices().forEach(service => {
+        // Skip 'exterior' and 'interior' for motorcycles
+        if (vehicleType === 'moto' && (service.id === 'exterior' || service.id === 'interior')) {
+            return;
+        }
+        
         const option = document.createElement('div');
         const price = service.prices[vehicleType];
         const priceText = price > 0 ? ` - R$ ${price},00` : ` - Indisponível`;

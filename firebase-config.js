@@ -57,7 +57,20 @@ db.collection("milgrau_data").doc("global_state").onSnapshot((doc) => {
                 }
                 if (key === 'milgrau_services' && typeof window.milgrauServices !== 'undefined') {
                     window.milgrauServices.length = 0;
-                    fbValue.forEach(item => window.milgrauServices.push(item));
+                    fbValue.forEach(item => {
+                        // MIGRATION: Inject featuresMoto and default moto prices if missing from Firebase
+                        if (typeof defaultServices !== 'undefined') {
+                            const def = defaultServices.find(d => d.id === item.id);
+                            if (def) {
+                                if (!item.featuresMoto) item.featuresMoto = def.featuresMoto;
+                                if (!item.prices) item.prices = {};
+                                if (item.prices.moto === undefined || item.prices.moto === 0) {
+                                    item.prices.moto = def.prices.moto;
+                                }
+                            }
+                        }
+                        window.milgrauServices.push(item);
+                    });
                 }
                 if (key === 'milgrau_settings' && typeof window.milgrauSettings !== 'undefined') {
                     Object.assign(window.milgrauSettings, fbValue);
